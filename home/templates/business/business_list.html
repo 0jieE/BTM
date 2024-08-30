@@ -1,0 +1,14 @@
+{% for entry in businesses_with_years %}
+    <tr>
+        <td>{{ entry.business.business_no|default_if_none:"" }}</td>
+        <td>{{ entry.business.business_name|default_if_none:"" }}</td>
+        <td>{{ entry.business.payment_mode|default_if_none:"" }}</td>
+        <td>{{ entry.business.plate_no|default_if_none:"" }}</td>
+        <td>
+            {% for year in entry.years %}
+                {{ year }}{% if not forloop.last %}, {% endif %}
+            {% endfor %}
+        </td>
+    </tr>
+{% endfor %}
+    

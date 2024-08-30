@@ -1,0 +1,12 @@
+{% for collection in collections %}
+    <tr>
+        <td>{{ collection.or_no|default_if_none:"" }} </td>
+        <td>{{ collection.date_time|default_if_none:"" }} </td>
+        <td>{{ collection.business_no|default_if_none:"" }} </td>
+        <td>{{ collection.payor|default_if_none:"" }} </td>
+        <td>{{ collection.business_name|default_if_none:"" }} </td>
+        <td>{{ collection.business_tax|default_if_none:"" }} </td>
+        <td>{{ collection.permit|default_if_none:"" }} </td>
+        <td>{{ collection.total|default_if_none:"" }} </td>
+    </tr>
+{% endfor %}

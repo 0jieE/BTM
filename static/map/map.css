@@ -1,0 +1,23 @@
+
+/* Ensure the container of the map has a height */
+.content-wrapper, .content, .container-fluid, .card, .card-body {
+    height: 100%;
+}
+
+/* Set the height of the map div */
+#map {
+    height: 75vh; /* 75% of the viewport height */
+    width: 100%;
+}
+
+.map-body {
+    padding: 0; /* Remove padding if causing overflow */
+}
+
+#business-list {
+    max-height: 100%; /* Adjust the height as needed */
+    overflow-y: auto;
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+}

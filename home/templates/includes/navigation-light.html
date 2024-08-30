@@ -1,0 +1,226 @@
+  {% load static %}
+  
+  <!-- Navbar -->
+  <nav class="main-header navbar navbar-expand navbar-light">
+    <!-- Left navbar links -->
+    <ul class="navbar-nav">
+      <li class="nav-item">
+        <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
+      </li>
+      <li class="nav-item d-none d-sm-inline-block">
+        <a href="#" class="nav-link js-business" data-url="{% url "business-file" %}" data-toggle="modal" data-target="#uploadModal">Upload Business list</a>
+      </li>
+      <li class="nav-item d-none d-sm-inline-block">
+        <a href="#" class="nav-link js-collection" data-url="{% url "collection-file" %}" data-toggle="modal" data-target="#uploadModal">Upload Collection list</a>
+      </li>
+      <li class="nav-item d-none d-sm-inline-block">
+        <a href="#" class="nav-link">Logout</a>
+      </li>
+    </ul>
+
+    <!-- Right navbar links -->
+    <ul class="navbar-nav ml-auto">
+      <li class="nav-item">
+        <a class="nav-link" data-widget="control-sidebar" data-controlsidebar-slide="true" href="#" role="button">
+          <i class="fas fa-th-large"></i>
+        </a>
+      </li>
+    </ul>
+  </nav>
+  <!-- /.navbar -->
+
+  <!-- Modal -->
+  <div class="modal fade" id="uploadModal">
+    <div class="modal-dialog">
+      <div class="modal-content">
+      </div>
+    </div>
+  </div>
+  
+  <div class="modal fade" id="progress-modal">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header" id="progress-header" style="display: none;">
+          <h4 class="modal-title">Done Uploading</h4>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body text-center">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+          <p id="progress-modal-text">Uploading, please wait...</p>
+          <div id="progress-summary" style="display: none;">
+            <div class="row">
+              <div class="col-6">
+                <p>Here is the summary:</p>
+              </div>
+              <div class="col-6">
+                <button id="copy-summary" class="btn btn-primary btn-sm float-right mt-2" style="margin: 10px 0 ;">copy</button>
+              </div>
+            </div>
+            <textarea id="summary-text" class="form-control" rows="10" readonly></textarea>
+          </div>
+        </div>
+        <div class="modal-footer justify-content-between" id="progress-footer" style="display: none;">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script src="{% static 'js/jquery-3.6.0.min.js' %}"></script>
+  <script>
+    $(function() {
+      var loadBusinessForm = function() {
+        var btn = $(this);
+        $.ajax({
+          url: btn.attr('data-url'),
+          type: 'get',
+          dataType: 'json',
+          beforeSend: function() {
+            $("#uploadModal").modal("show");
+          },
+          success: function(data) {
+            $("#uploadModal .modal-content").html(data.html_form);
+            
+            // Attach the saveBusinessForm handler to the new form
+            $("#uploadModal .js-upload-business-form").on("submit", saveBusinessForm);
+          }
+        });
+      };
+  
+      var loadCollectionForm = function() {
+        var btn = $(this);
+        $.ajax({
+          url: btn.attr('data-url'),
+          type: 'get',
+          dataType: 'json',
+          beforeSend: function() {
+            $("#uploadModal").modal("show");
+          },
+          success: function(data) {
+            $("#uploadModal .modal-content").html(data.html_form);
+            
+            // Attach the saveCollectionForm handler to the new form
+            $("#uploadModal .js-upload-collection-form").on("submit", saveCollectionForm);
+          }
+        });
+      };
+  
+      var saveBusinessForm = function(e) {
+        e.preventDefault();
+        var form = $(this);
+        var formData = new FormData(form[0]);
+        $.ajax({
+          url: form.attr('action'),
+          data: formData,
+          type: form.attr('method'),
+          dataType: 'json',
+          contentType: false,  // Prevent jQuery from overriding content type
+          processData: false,  // Prevent jQuery from processing data
+          beforeSend: function() {
+            $('#uploadModal').modal('hide');  // Hide the upload modal
+            $('#progress-modal').modal('show');  // Show the progress modal
+          },
+          success: function(response) {
+            $('#progress-modal .spinner-border').hide();
+            $('#progress-modal-text').hide();
+  
+            if (response.form_is_valid) {
+              if (response.skipped_rows.length > 0 || Object.keys(response.duplicate_groups).length > 0) {
+                let summary = `
+                  File processed successfully with ${response.skipped_rows.length} skipped rows and ${Object.keys(response.duplicate_groups).length} groups of duplicate rows.\n\n
+                  Skipped rows:\n ${response.skipped_rows.join(', ')}\n
+                  Duplicate groups:
+                `;
+  
+                for (const [key, value] of Object.entries(response.duplicate_groups)) {
+                  summary += `\nBusiness No: ${key}, Rows: ${value.join(', ')}`;
+                }
+  
+                $('#summary-text').val(summary);
+                $('#progress-summary').show();
+                $('#progress-header').show();
+                $('#progress-footer').show();
+              } else {
+                $('#progress-modal-text').text("All data were valid.");
+                $('#progress-modal-text').show();
+                $('#progress-header').show();
+                $('#progress-footer').show();
+              }
+            } else {
+              $("#uploadModal .modal-content").html(response.html_form);
+              $('#uploadModal').modal('show');  // Re-show the upload modal if form is not valid
+            }
+          },
+          error: function(response) {
+            console.log(response);
+          }
+        });
+      };
+  
+      var saveCollectionForm = function(e) {
+        e.preventDefault();
+        var form = $(this);
+        var formData = new FormData(form[0]);
+        $.ajax({
+          url: form.attr('action'),
+          data: formData,
+          type: form.attr('method'),
+          dataType: 'json',
+          contentType: false,  // Prevent jQuery from overriding content type
+          processData: false,  // Prevent jQuery from processing data
+          beforeSend: function() {
+            $('#uploadModal').modal('hide');  // Hide the upload modal
+            $('#progress-modal').modal('show');  // Show the progress modal
+          },
+          success: function(response) {
+            $('#progress-modal .spinner-border').hide();
+            $('#progress-modal-text').hide();
+  
+            if (response.form_is_valid) {
+              if (response.skipped_rows.length > 0) {
+                let summary = `
+                  File processed successfully with ${response.skipped_rows.length} skipped rows.\n\n
+                  Skipped rows:\n ${response.skipped_rows.join(', ')}
+                `;
+                $('#summary-text').val(summary);
+                $('#progress-summary').show();
+                $('#progress-header').show();
+                $('#progress-footer').show();
+              } else {
+                $('#progress-modal-text').text("All data were valid.");
+                $('#progress-modal-text').show();
+                $('#progress-header').show();
+                $('#progress-footer').show();
+              }
+            } else {
+              $("#uploadModal .modal-content").html(response.html_form);
+              $('#uploadModal').modal('show');  // Re-show the upload modal if form is not valid
+            }
+          },
+          error: function(response) {
+            console.log(response);
+          }
+        });
+      };
+  
+      $(".js-business").click(loadBusinessForm);
+      $(".js-collection").click(loadCollectionForm);
+
+      // Reload the page when the progress modal is closed
+      $('#progress-modal').on('hidden.bs.modal', function () {
+        location.reload();
+      });
+  
+      // Copy summary text to clipboard
+      $('#progress-modal').on('click', '#copy-summary', function() {
+        var summaryText = document.getElementById('summary-text');
+        summaryText.select();
+        document.execCommand('copy');
+      });
+    });
+  </script>
+  

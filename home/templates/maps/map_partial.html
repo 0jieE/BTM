@@ -1,0 +1,94 @@
+
+<div class="chart-card">
+    <div class="row">
+        <div class="col-12 col-sm-6 col-md-3">
+        <div class="info-box">
+            <span class="info-box-icon bg-info elevation-1"><i class="fas fa-cog"></i></span>
+
+            <div class="info-box-content">
+            <span class="info-box-text">CPU Traffic</span>
+            <span class="info-box-number">
+                10
+                <small>%</small>
+            </span>
+            </div>
+        </div>
+        </div>
+        <div class="col-12 col-sm-6 col-md-3">
+        <div class="info-box mb-3">
+            <span class="info-box-icon bg-danger elevation-1"><i class="fas fa-thumbs-up"></i></span>
+
+            <div class="info-box-content">
+            <span class="info-box-text">Likes</span>
+            <span class="info-box-number">41,410</span>
+            </div>
+        </div>
+        </div>
+        <div class="clearfix hidden-md-up"></div>
+
+        <div class="col-12 col-sm-6 col-md-3">
+        <div class="info-box mb-3">
+            <span class="info-box-icon bg-success elevation-1"><i class="fas fa-shopping-cart"></i></span>
+
+            <div class="info-box-content">
+            <span class="info-box-text">Sales</span>
+            <span class="info-box-number">760</span>
+            </div>
+        </div>
+        </div>
+        <div class="col-12 col-sm-6 col-md-3">
+        <div class="info-box mb-3">
+            <span class="info-box-icon bg-warning elevation-1"><i class="fas fa-users"></i></span>
+
+            <div class="info-box-content">
+            <span class="info-box-text">New Members</span>
+            <span class="info-box-number">2,000</span>
+            </div>
+        </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">Monthly Recap Report</h5>
+                <select id="year-filter" class="form-control">
+                    <option value="">Year</option>
+                    {% for year in business_years %}
+                        <option value="{{ year }}">{{ year }}</option>
+                    {% endfor %}
+                </select>
+                <select id="month-filter" class="form-control">
+                    <option value="">Month</option>
+                    {% for month_number, month_name in months %}
+                        <option value="{{ month_number }}">{{ month_name }}</option>
+                    {% endfor %}
+                    {{month_fiter}}
+                </select>
+
+            </div>
+            <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p class="text-center">
+                        <strong>Sales: 1 Jan, 2014 - 30 Jul, 2014</strong>
+                    </p>
+
+                    <div class="chart">
+                        <canvas class="chart-bars" id="lineChart"></canvas>
+                    </div>
+                    </div>
+                    <div class="col-md-6">
+                    <p class="text-center">
+                        <strong>Goal Completion</strong>
+                    </p>
+                    <div class="chart">
+                        <canvas class="chart-bars" id="stackedBarChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            </div>
+        </div>
+        </div>
+    </div>
+</div>
