@@ -18,11 +18,12 @@ class User (AbstractUser,PermissionsMixin):
     last_name = models.CharField(max_length=50)
     first_name = models.CharField(max_length=50)
     middle_name = models.CharField(max_length=50)
-    extension_name = models.CharField(max_length=50)
+    extension_name = models.CharField(max_length=50, null=True, blank=True)
     is_staff = models.BooleanField(default=True)
     is_active = models.BooleanField(default=True)
     is_superuser = models.BooleanField(default=False)
     staff = models.BooleanField(default=False)
+    admin = models.BooleanField(default=False)
 
     def __str__(self):
         template = '{0.first_name} {0.middle_name} {0.last_name}'
@@ -48,10 +49,34 @@ class Staff_user(User):
             self.is_active = True
             self.is_superuser = False
             self.staff = True
+            self.admin = False
             return super().save(*args, **kwargs)
 
     def welcome(self):
         return "Only for staff user"
+    
+class Admin_manager(BaseUserManager):
+    def get_queryset(self, *args, **kwargs):
+        results = super().get_queryset( *args, **kwargs)
+        return results.filter(admin = True)
+    
+class Admin_user(User):
+    user = Admin_manager()
+
+    class Meta:
+        proxy = True
+
+    def save(self, *args, **kwargs):
+        if not self.pk:
+            self.is_staff = True
+            self.is_active = True
+            self.is_superuser = False
+            self.staff = False
+            self.admin = True
+            return super().save(*args, **kwargs)
+
+    def welcome(self):
+        return "Only for admin user"
 
 def get_upload_to(instance, filename):
     return os.path.join(f'business_{instance.business.business_no}', filename)
@@ -300,3 +325,14 @@ class YearlyCalculation(models.Model):
 
     def __str__(self):
         return f"Yearly Calculations for {self.year}"
+
+
+class UserLogs(models.Model):
+    user = models.ForeignKey(Staff_user, on_delete=models.CASCADE)
+    business = models.ForeignKey(Business, on_delete=models.CASCADE)
+    action = models.CharField(max_length=255)
+    timestamp = models.DateTimeField(auto_now_add=True)
+    pictures = models.ManyToManyField('Picture', blank=True)
+
+    def __str__(self):
+        return f"Log by {self.user.username} on {self.timestamp}"

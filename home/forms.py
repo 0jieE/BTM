@@ -2,7 +2,7 @@ from django import forms
 from crispy_forms.helper import FormHelper
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm, PasswordChangeForm, UsernameField, PasswordResetForm, SetPasswordForm
 from crispy_forms.layout import Submit
-from .models import Business, User, Staff_user, BusinessYear
+from .models import Business, User, Staff_user, BusinessYear, Admin_user
 from django.utils.translation import gettext_lazy as _
 
 class LoginForm(forms.Form):
@@ -19,26 +19,25 @@ class UserPasswordResetForm(PasswordResetForm):
         'placeholder': 'Email'
     }))
 
-
 class StaffRegistrationForm(UserCreationForm):
     username = forms.CharField(
         widget=forms.TextInput(
             attrs={
                 "placeholder": "Username",
                 "class": "form-control"}))
-    
+
     first_name = forms.CharField(
         widget=forms.TextInput(
             attrs={
                 "placeholder": "First name",
                 "class": "form-control"}))
-    
+
     middle_name = forms.CharField(
         widget=forms.TextInput(
             attrs={
                 "placeholder": "Middle name",
                 "class": "form-control"}))
-    
+
     last_name = forms.CharField(
         widget=forms.TextInput(
             attrs={
@@ -46,17 +45,18 @@ class StaffRegistrationForm(UserCreationForm):
                 "class": "form-control"}))
 
     extension_name = forms.CharField(
+        required=False,  # Make the field optional
         widget=forms.TextInput(
             attrs={
                 "placeholder": "Extension name",
                 "class": "form-control"}))
-    
+
     password1 = forms.CharField(
         widget=forms.PasswordInput(
             attrs={
                 "placeholder": "Password",
                 "class": "form-control"}))
-    
+
     password2 = forms.CharField(
         widget=forms.PasswordInput(
             attrs={
@@ -65,6 +65,55 @@ class StaffRegistrationForm(UserCreationForm):
 
     class Meta:
         model = Staff_user
+        fields = ('username','first_name','middle_name','last_name','extension_name','password1', 'password2')
+
+
+class AdminRegistrationForm(UserCreationForm):
+    username = forms.CharField(
+        widget=forms.TextInput(
+            attrs={
+                "placeholder": "Username",
+                "class": "form-control"}))
+
+    first_name = forms.CharField(
+        widget=forms.TextInput(
+            attrs={
+                "placeholder": "First name",
+                "class": "form-control"}))
+
+    middle_name = forms.CharField(
+        widget=forms.TextInput(
+            attrs={
+                "placeholder": "Middle name",
+                "class": "form-control"}))
+
+    last_name = forms.CharField(
+        widget=forms.TextInput(
+            attrs={
+                "placeholder": "Last name",
+                "class": "form-control"}))
+
+    extension_name = forms.CharField(
+        required=False,  # Make the field optional
+        widget=forms.TextInput(
+            attrs={
+                "placeholder": "Extension name",
+                "class": "form-control"}))
+
+    password1 = forms.CharField(
+        widget=forms.PasswordInput(
+            attrs={
+                "placeholder": "Password",
+                "class": "form-control"}))
+
+    password2 = forms.CharField(
+        widget=forms.PasswordInput(
+            attrs={
+                "placeholder": "Password check",
+                "class": "form-control"}))
+
+    class Meta:
+        model = Admin_user
         fields = ('username','first_name','middle_name','last_name','extension_name','password1', 'password2')
 
 class MultipleFileInput(forms.ClearableFileInput):
@@ -115,3 +164,28 @@ class YearSelectionForm(forms.Form):
         label='Select Year',
         required=True,
     )
+
+
+class EditLocationForm(forms.ModelForm):
+    class Meta:
+        model = Business
+        fields = ['latitude', 'longitude']
+        widgets = {
+            'latitude': forms.NumberInput(attrs={'class': 'form-control','id':'lat'}),
+            'longitude': forms.NumberInput(attrs={'class': 'form-control','id':'long'}),
+        }
+
+    def clean_latitude(self):
+        latitude = self.cleaned_data.get('latitude')
+        if latitude:
+            latitude = round(latitude, 6)
+        return latitude
+
+    def clean_longitude(self):
+        longitude = self.cleaned_data.get('longitude')
+        if longitude:
+            longitude = round(longitude, 6)
+        return longitude
+
+
+

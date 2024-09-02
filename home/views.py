@@ -4,8 +4,8 @@ from django.http import HttpResponse, JsonResponse
 from django.template.loader import render_to_string
 import folium
 from django.views import View
-from .forms import UploadBusinessFileForm, UploadCollectionFileForm, StaffRegistrationForm, LoginForm,YearSelectionForm
-from .models import Business,BusinessYear, PaymentMode, BusinessType, ApplicationMethod, Collection,Picture, MonthlyCalculation, YearlyCalculation
+from .forms import UploadBusinessFileForm, UploadCollectionFileForm, StaffRegistrationForm, LoginForm,YearSelectionForm,AdminRegistrationForm,EditLocationForm
+from .models import Business,BusinessYear, PaymentMode, BusinessType, ApplicationMethod, Collection,Picture, MonthlyCalculation, YearlyCalculation,UserLogs,User
 from datetime import datetime 
 import logging
 from django.utils import timezone
@@ -26,7 +26,6 @@ from django.db.models import Q
 from django.db import models
 from django.contrib import messages
 from django.contrib.auth import logout, authenticate,login
-from django.contrib.auth.decorators import login_required
 
 
 
@@ -51,7 +50,7 @@ def user_login(request):
             if user is not None and user.is_superuser:
                 login(request, user)
                 return redirect('/admin')
-            elif user is not None and user.staff:
+            elif user is not None and not user.is_superuser:
                 login(request, user)
                 return redirect('map-view')
             else:
@@ -61,7 +60,8 @@ def user_login(request):
     return render(request, 'accounts/login.html', {'form': form, 'msg': msg})
 
 
-def user_register(request):
+
+def staff_register(request):
     msg = None
     success = False
     if request.method == "POST":
@@ -85,7 +85,31 @@ def user_register(request):
     return render(request, 'accounts/register.html',{"form": form, "msg": msg, "success": success})
 
 
-@login_required
+def admin_register(request):
+    msg = None
+    success = False
+    if request.method == "POST":
+        form = AdminRegistrationForm(request.POST)
+        if form.is_valid():
+            form.save()
+            username = form.cleaned_data.get("username")
+            raw_password = form.cleaned_data.get("password1")
+            user = authenticate(username=username, password=raw_password)
+
+            msg = 'User created successfully.'
+            success = True
+
+            return redirect("login")
+
+        else:
+            msg = 'Form is not valid'
+    else:
+        form = StaffRegistrationForm()
+    
+    return render(request, 'accounts/register.html',{"form": form, "msg": msg, "success": success})
+
+
+
 def map_view(request):
     search_query = request.GET.get('search', '')
     year_filter = request.GET.get('year', None)
@@ -228,7 +252,7 @@ def process_data_to_calculate(request):
         logger.error("Form is not valid")
         return JsonResponse({'form_is_valid': False})
 
-@login_required
+
 def calculate_data(request):
     if request.method == 'POST':
         return process_data_to_calculate(request)
@@ -241,7 +265,7 @@ def calculate_data(request):
 
 
 
-@login_required
+
 def business(request):
     selected_year = int(request.GET.get('year', dt.now().year))
     selected_business_id = request.GET.get('business_id')
@@ -312,10 +336,31 @@ def business(request):
     return render(request, 'business/business.html', context)
 
 
+def edit_location(request, pk):
+    data = dict()
+    business = get_object_or_404(Business, pk=pk)
+
+    if request.method == 'POST':
+        form = EditLocationForm(request.POST, instance=business)
+        if form.is_valid():
+            form.save()
+            # Create a log entry
+            UserLogs.objects.create(
+                user=request.user,
+                business=business,
+                action=f"Updated location to latitude: {business.latitude}, longitude: {business.longitude}"
+            )
+            data['form_is_valid'] = True
+        else:
+            data['form_is_valid'] = False
+    else:
+        form = EditLocationForm(instance=business)
+    
+    context = {'form': form}
+    data['html_form'] = render_to_string('business/edit_location.html', context, request=request)
+    return JsonResponse(data)
 
 
-
-@login_required
 def upload_pictures(request):
     data = dict()
     
@@ -324,19 +369,26 @@ def upload_pictures(request):
     else:
         business_id = request.GET.get('business_id')
 
-    print(f"Business ID: {business_id}")  # Debugging: Print the business_id to ensure it's being passed correctly
-
     business = get_object_or_404(Business, id=business_id)
     
     if request.method == 'POST':
         form = MultiplePictureForm(request.POST, request.FILES)
         if form.is_valid():
-            files = request.FILES.getlist('pictures')  # Use getlist to handle multiple files
+            files = request.FILES.getlist('pictures')
+            picture_objects = []
             for f in files:
-                Picture.objects.create(business=business, picture=f)
+                picture = Picture.objects.create(business=business, picture=f)
+                picture_objects.append(picture)
+            # Create a log entry with pictures
+            log = UserLogs.objects.create(
+                user=request.user,
+                business=business,
+                action=f"Uploaded {len(files)} pictures"
+            )
+            log.pictures.set(picture_objects)  # Link pictures to the log
+            log.save()
             data['form_is_valid'] = True
         else:
-            print("Form errors:", form.errors)  # Debugging: Print form errors if invalid
             data['form_is_valid'] = False
     else:
         form = MultiplePictureForm(initial={'business_no': business.id})
@@ -346,8 +398,25 @@ def upload_pictures(request):
     return JsonResponse(data)
 
 
+def user_logs_view(request):
+    users = User.objects.all()
+    return render(request, 'logs/user_logs.html', {'users': users})
 
-@login_required
+def get_user_logs(request, user_id):
+    logs = UserLogs.objects.filter(user_id=user_id)
+    logs_data = []
+    for log in logs:
+        pictures = [picture.picture.url for picture in log.pictures.all()]
+        logs_data.append({
+            'action': log.action,
+            'timestamp': log.timestamp,
+            'business': log.business.business_name,
+            'pictures': pictures
+        })
+    return JsonResponse({'logs': logs_data})
+
+
+
 def collection(request):
     collections = Collection.objects.all()
 
@@ -357,7 +426,7 @@ def collection(request):
 
     return render(request, 'collection/collection.html', context)
 
-@login_required
+
 def business_table(request):
     businesses = Business.objects.all()
     
@@ -378,8 +447,6 @@ def business_table(request):
 
 
 
-
-# Set up logging
 logger = logging.getLogger(__name__)
 
 def process_business_file(file):
@@ -551,7 +618,7 @@ def process_business_upload(request):
         logger.error("Form is not valid")
         return JsonResponse({'form_is_valid': False})
 
-@login_required
+
 def UploadBusinessFileView(request):
     if request.method == 'POST':
         return process_business_upload(request)
@@ -644,7 +711,7 @@ def process_collection_file(file):
 
 
 
-@login_required
+
 def UploadCollectionFileView(request):
     data = dict()
     if request.method == 'POST':

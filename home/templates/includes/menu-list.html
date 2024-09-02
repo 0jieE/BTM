@@ -62,15 +62,47 @@
         <p>Collection</p>
       </a>
     </li>
-  
-    {% endif %}
-    
-    {% if request.user.is_authenticated %}
     <li class="nav-item">
       <a href="{% url "logout" %}" class="nav-link ">
-        <i class="fa fa-sign-out-alt"></i>
+        <i class="nav-icon fas fa-th"></i>
+        <p>Signout</p>
       </a>
     </li>
-    {% endif %}            
+  
+    {% endif %}          
+
+    {% if request.user.admin %}
+    <li class="nav-item">
+      <a href="{% url "map-view" %}" class="nav-link {% if 'profiles' in segment %} active {% endif %}">
+        <i class="nav-icon fas fa-th"></i>
+        <p>Maps</p>
+      </a>
+    </li>
+    <li class="nav-item">
+      <a href="{% url "business" %}" class="nav-link {% if 'business' in segment %} active {% endif %}">
+        <i class="nav-icon fas fa-th"></i>
+        <p>Busines</p>
+      </a>
+    </li>
+    <li class="nav-item">
+      <a href="{% url "collection" %}" class="nav-link {% if 'profiles' in segment %} active {% endif %}">
+        <i class="nav-icon fas fa-th"></i>
+        <p>Collection</p>
+      </a>
+    </li>
+    <li class="nav-item">
+      <a href="{% url "user_logs" %}" class="nav-link {% if 'profiles' in segment %} active {% endif %} ">
+        <i class="nav-icon fas fa-th"></i>
+        <p>Users</p>
+      </a>
+    </li>
+    <li class="nav-item">
+      <a href="{% url "logout" %}" class="nav-link ">
+        <i class="nav-icon fas fa-th"></i>
+        <p>Signout</p>
+      </a>
+    </li>
+  
+    {% endif %}    
     
   </ul>

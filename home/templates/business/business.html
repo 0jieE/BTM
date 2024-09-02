@@ -473,7 +473,7 @@
                     <li>Telephone: <a>{{selected_business.telephone_no|default_if_none:"" }}</a></li>
                     <li>Mobile: <a>{{selected_business.mobile_no|default_if_none:"" }}</a></li>
                     <li>Latitude: <a>{{selected_business.latitude|default_if_none:"" }}</a></li>
-                    <li>Longitude: <a>{{selected_business.longitude|default_if_none:"" }}</a></li>
+                    <li>Longitude: <a href="#" class="js-location" data-url="{% url 'edit-location' selected_business.pk%}">{{selected_business.longitude|default_if_none:"none" }}</a></li>
                 </div>
           </div>
           <!-- Sidebar for Files & Photos -->
@@ -481,12 +481,20 @@
             <div class="sidebar-content">
                 <div class="sidebar-nav">
                     <ul class="nav nav-pills">
-                        <li class="nav-item"><a class="nav-link active" href="#map" data-toggle="tab">Map</a></li>
+                        <li class="nav-item"><a class="nav-link active" href="#map" data-toggle="tab">Map and Photos</a></li>
                         <li class="nav-item"><a class="nav-link" href="#collection" data-toggle="tab">Collection</a></li>
                     </ul>
                 </div>
                 <div class="sidebar-body tab-content">
                     <div class="active tab-pane" id="map">
+                        <br>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h6>Map</h6>
+                            <a href="#" class="js-location" data-url="{% url 'edit-location' selected_business.pk%}">
+                                Edit
+                            </a>
+                        </div>
+                        <br>
                         <div id="map">{{ map_html|safe }}</div>
                         <br>
                         <div class="d-flex justify-content-between align-items-center">
@@ -547,16 +555,19 @@
   </div>  
   
   
-  
-  
-  <!-- Modal -->
+
   <div class="modal fade" id="uploadModal">
       <div class="modal-dialog">
           <div class="modal-content"></div>
       </div>
   </div>
 
-  
+  <div class="modal fade" id="locationModal">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content"></div>
+    </div>
+</div>
+
   <div class="modal fade" id="progress-modal">
       <div class="modal-dialog">
           <div class="modal-content">
@@ -579,6 +590,7 @@
 <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.js"></script>
+<script src="{% static 'leaflet/leaflet.js' %}"></script>
 <script>
     
 document.addEventListener("DOMContentLoaded", function() {
@@ -722,11 +734,76 @@ document.addEventListener('DOMContentLoaded', function () {
       };
   
       $(".js-photos").click(loadPhotosForm);
+
   });
-  
-  
-   
-  
+
+$(function() {
+    // Function to load the form via AJAX
+    var loadLocationForm = function() {
+        var btn = $(this);
+        $.ajax({
+            url: btn.attr('data-url'),
+            type: 'get',
+            dataType: 'json',
+            beforeSend: function() {
+                $("#locationModal").modal("show");
+            },
+            success: function(data) {
+                $("#locationModal .modal-content").html(data.html_form);
+                $("#locationModal .js-location-form").on("submit", saveLocationForm);
+            },
+            error: function(xhr, status, error) {
+                console.log("Failed to load form: ", error);
+            }
+        });
+    };
+
+    // Function to handle form submission via AJAX
+    var saveLocationForm = function(e) {
+        e.preventDefault(); // Prevent standard form submission
+        var form = $(this);
+
+        $.ajax({
+            url: form.attr('action'),
+            type: form.attr('method'),
+            data: form.serialize(), // Serialize the form data
+            dataType: 'json',
+            beforeSend: function(xhr, settings) {
+                xhr.setRequestHeader("X-CSRFToken", getCookie('csrftoken'));
+            },
+            success: function(data) {
+                if (data.form_is_valid) {
+                    $('#locationModal').modal('hide');
+                    location.reload(); // Reload the page if form submission is successful
+                } else {
+                    $("#locationModal .modal-content").html(data.html_form); // Reload the form if there are errors
+                }
+            },
+            error: function(xhr, status, error) {
+                console.log("AJAX error:", error);
+            }
+        });
+    };
+
+    // Bind the loadLocationForm function to the click event on buttons with the class js-location
+    $(".js-location").click(loadLocationForm);
+
+    // Function to get the CSRF token from the cookies
+    function getCookie(name) {
+        var cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            var cookies = document.cookie.split(';');
+            for (var i = 0; i < cookies.length; i++) {
+                var cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+});
   
 </script>
 {% endblock extra_scripts %}
