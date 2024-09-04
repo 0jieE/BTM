@@ -12,11 +12,10 @@ from django.utils import timezone
 from django.utils.timezone import make_aware
 import pytz
 from django.db.models.functions import ExtractYear, ExtractMonth
-from datetime import datetime as dt
+from datetime import date, timedelta, datetime as dt
 from .forms import MultiplePictureForm
 from django.core.serializers.json import DjangoJSONEncoder
 import json
-from datetime import timedelta
 from folium.plugins import Geocoder
 from django.db.models import Sum, Count
 from decimal import Decimal
@@ -26,8 +25,8 @@ from django.db.models import Q
 from django.db import models
 from django.contrib import messages
 from django.contrib.auth import logout, authenticate,login
-
-
+import calendar
+from django.utils.timezone import now
 
 
 logger = logging.getLogger(__name__)
@@ -336,6 +335,14 @@ def business(request):
     return render(request, 'business/business.html', context)
 
 
+
+
+
+
+
+
+#User logs///////////////////////////////////////////////////////////
+
 def edit_location(request, pk):
     data = dict()
     business = get_object_or_404(Business, pk=pk)
@@ -348,6 +355,8 @@ def edit_location(request, pk):
             UserLogs.objects.create(
                 user=request.user,
                 business=business,
+                latitude=business.latitude,
+                longitude=business.longitude,
                 action=f"Updated location to latitude: {business.latitude}, longitude: {business.longitude}"
             )
             data['form_is_valid'] = True
@@ -398,9 +407,65 @@ def upload_pictures(request):
     return JsonResponse(data)
 
 
+
+
 def user_logs_view(request):
     users = User.objects.all()
-    return render(request, 'logs/user_logs.html', {'users': users})
+    current_date = dt.now()
+    selected_year = int(request.GET.get('year', current_date.year))
+    selected_month = int(request.GET.get('month', current_date.month))
+    selected_day = int(request.GET.get('day', current_date.day))
+    selected_user_id = request.GET.get('user_id', users.first().id)
+
+    if not selected_user_id and users.exists():
+        selected_user = users.first()
+    else:
+        selected_user = users.filter(id=selected_user_id).first()
+
+    # Filter logs based on selected filters
+    logs = UserLogs.objects.filter(user=selected_user)
+    logs = logs.filter(timestamp__year=selected_year, timestamp__month=selected_month, timestamp__day=selected_day)
+
+    # Create a Folium map centered on a default location
+    map_center = [0, 0]  # Default center of the map
+    if logs.filter(latitude__isnull=False, longitude__isnull=False).exists():
+        first_log_with_coords = logs.filter(latitude__isnull=False, longitude__isnull=False).first()
+        map_center = [first_log_with_coords.latitude, first_log_with_coords.longitude]
+    folium_map = folium.Map(location=map_center, zoom_start=15)
+
+    # Add markers for logs with coordinates
+    for log in logs.filter(latitude__isnull=False, longitude__isnull=False):
+        folium.Marker(
+            location=[log.latitude, log.longitude],
+            popup=f"{log.action} at {log.business}",
+        ).add_to(folium_map)
+
+    # Render the map to HTML
+    map_html = folium_map._repr_html_()
+
+    # Get the range of years starting from 2020 to current year
+    years = range(2020, current_date.year + 1)
+    months = [{'num': i, 'name': current_date.replace(month=i).strftime('%B')} for i in range(1, 13)]
+    
+    # Dynamically calculate the number of days in the selected month
+    days_in_month = dt(selected_year, selected_month, 1) + timedelta(days=31)
+    days = range(1, (days_in_month - timedelta(days=days_in_month.day)).day + 1)
+
+    context = {
+        'users': users,
+        'selected_user': selected_user,
+        'logs': logs,
+        'years': years,
+        'months': months,
+        'days': days,
+        'selected_year': selected_year,
+        'selected_month': selected_month,
+        'selected_day': selected_day,
+        'map_html': map_html,  # Pass the map HTML to the context
+    }
+
+    return render(request, 'logs/user_logs.html', context)
+
 
 def get_user_logs(request, user_id):
     logs = UserLogs.objects.filter(user_id=user_id)
@@ -417,7 +482,15 @@ def get_user_logs(request, user_id):
 
 
 
+
+
+
+
+
+
+
 def collection(request):
+
     collections = Collection.objects.all()
 
     context = {
