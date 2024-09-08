@@ -283,6 +283,11 @@
                                 {% else %}
                                     <p class="no-logs">No logs available for this user on this date.</p>
                                 {% endif %}
+                                <button class="btn btn-sm btn-primary float-right" 
+                                    onclick="window.location.href='{% url 'logs-pdf' %}?year={{ selected_year }}&month={{ selected_month }}&day={{ selected_day }}&user_id={{ selected_user.id }}';">
+                                    pdf
+                                </button>
+                             
                             </div>
                         </div>
                     </div>

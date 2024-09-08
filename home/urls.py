@@ -24,4 +24,5 @@ urlpatterns = [
 
     path('user-logs/', views.user_logs_view, name='user_logs'),
     path('get-user-logs/<int:user_id>/', views.get_user_logs, name='get_user_logs'),
+    path('user-logs/logs-pdf', views.logs_report_pdf, name='logs-pdf'),
 ]

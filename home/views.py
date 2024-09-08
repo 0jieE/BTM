@@ -27,7 +27,8 @@ from django.contrib import messages
 from django.contrib.auth import logout, authenticate,login
 import calendar
 from django.utils.timezone import now
-
+from xhtml2pdf import pisa
+from django.template.loader import get_template
 
 logger = logging.getLogger(__name__)
 
@@ -416,12 +417,12 @@ def user_logs_view(request):
     selected_month = int(request.GET.get('month', current_date.month))
     selected_day = int(request.GET.get('day', current_date.day))
     selected_user_id = request.GET.get('user_id', users.first().id)
-
     if not selected_user_id and users.exists():
         selected_user = users.first()
     else:
         selected_user = users.filter(id=selected_user_id).first()
 
+    print(f"{selected_year}")
     # Filter logs based on selected filters
     logs = UserLogs.objects.filter(user=selected_user)
     logs = logs.filter(timestamp__year=selected_year, timestamp__month=selected_month, timestamp__day=selected_day)
@@ -482,8 +483,47 @@ def get_user_logs(request, user_id):
 
 
 
+def render_to_pdf(template_src, context_dict={}):
+    template = get_template(template_src)
+    html = template.render(context_dict)
+    response = HttpResponse(content_type='application/pdf')
+    pisa_status = pisa.CreatePDF(html, dest=response)
+    if pisa_status.err:
+        return HttpResponse('We had some errors <pre>' + html + '</pre>')
+    return response
 
 
+
+def logs_report_pdf(request):
+    users = User.objects.all()
+    selected_year = int(request.GET.get('year'))
+    selected_month = int(request.GET.get('month'))
+    selected_day = int(request.GET.get('day'))
+    selected_user_id = int(request.GET.get('user_id'))
+
+    # Use get() instead of filter() to retrieve a single user
+    selected_user = users.get(id=selected_user_id)
+
+    # Filter logs by selected user and date
+    logs = UserLogs.objects.filter(
+        user=selected_user,
+        timestamp__year=selected_year,
+        timestamp__month=selected_month,
+        timestamp__day=selected_day
+    )
+
+    # Log the number of logs found
+    print(f"Found {logs.count()} logs for user {selected_user} on {selected_year}-{selected_month}-{selected_day}")
+
+    context = {
+        'logs': logs,
+        'user': selected_user,
+        'year': selected_year,
+        'month': selected_month,
+        'day': selected_day,
+    }
+
+    return render_to_pdf('logs/logs_report.html', context)
 
 
 
