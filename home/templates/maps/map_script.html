@@ -377,11 +377,6 @@
                                         </button>
                                         
                                         <div class="chart-body">
-                                            <!-- Your chart content goes here -->
-                                        </div>
-                                        
-
-                                        <div class="chart-body">
                                             <div class="row">
                                                 <div class="col-12 col-sm-6 col-md-3">
                                                 <div class="info-box">
@@ -436,18 +431,18 @@
                                                             <button type="button" class="btn btn-sm btn-primary float-right  js-calculate" data-toggle="modal" data-target="#calculateModal" data-url="{% url "calculate_data" %}">Update Data</button>
                                                         </div>
                                                         <div class="report-body">
-                                                        <div class="row">
-                                                            <div class="col-md-6">
-                                                                <div class="chart">
-                                                                    <canvas class="chart-bars" id="areaChart"></canvas>
-                                                                </div>
-                                                                </div>
+                                                            <div class="row">
                                                                 <div class="col-md-6">
-                                                                <div class="chart">
-                                                                    <canvas class="chart-bars" id="barChart"></canvas>
+                                                                    <div class="chart">
+                                                                        <canvas class="chart-bars" id="areaChart"></canvas>
+                                                                    </div>
+                                                                    </div>
+                                                                    <div class="col-md-6">
+                                                                    <div class="chart">
+                                                                        <canvas class="chart-bars" id="barChart"></canvas>
+                                                                    </div>
                                                                 </div>
                                                             </div>
-                                                        </div>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -775,6 +770,7 @@
         }
     
         $('#search-input').on('keyup', function() {
+            $('.chart-body').hide();
             var searchQuery = $(this).val();
             $.ajax({
                 url: "{% url 'map-view' %}",
@@ -855,6 +851,7 @@
         $('#year-filter, #month-filter').on('change', function() {
             var selectedYear = $('#year-filter').val();
             var selectedMonth = $('#month-filter').val();
+            $('.chart-body').show();
         
             $.ajax({
                 url: "{% url 'monthly-calculation' %}",
