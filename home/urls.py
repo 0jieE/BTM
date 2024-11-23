@@ -11,6 +11,7 @@ urlpatterns = [
 
     path('business/', views.business, name='business'),
     path('edit/location/<int:pk>/', views.edit_location, name='edit-location'),
+    path('location/<int:pk>/', views.location, name='location'),
 
     path('business/table', views.business_table, name='business-table'),
     path('collection/', views.collection, name='collection'),

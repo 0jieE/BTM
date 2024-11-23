@@ -302,11 +302,16 @@
     }
     
     #pictureModal .modal-body img {
-        max-width: 100%;
-        max-height: 100%;
-        height: 150px;
-        width: 100%;
-        object-fit: contain;
+        width: 100%; /* Match the width of the modal */
+        height: 75vh; /* Set the height to 75% of the viewport height */
+        object-fit: cover; /* Ensure the image covers the specified dimensions */
+        transition: transform 0.3s ease; /* Smooth transition for any zoom effects */
+        cursor: zoom-in; /* Indicate zoom capability */
+    }
+    
+    #pictureModal .modal-body img.enlarged {
+        transform: scale(1.5); /* Enlarge the image */
+        cursor: zoom-out; /* Indicate zoom-out capability */
     }
     
     #pictureModal .btn-prev, #pictureModal .btn-next {
@@ -342,6 +347,7 @@
         font-size: 30px; /* Increased font size for better visibility */
         z-index: 3; /* Ensure it is above other elements */
     }
+    
     
 
     
@@ -489,7 +495,7 @@
                     <div class="active tab-pane" id="map">
                         <br>
                         <div class="d-flex justify-content-between align-items-center">
-                            <h6>Map</h6>
+                            <h6><a  href="{% url 'location' selected_business.pk %}">Map</a></h6>
                             <a href="#" class="js-location" data-url="{% url 'edit-location' selected_business.pk%}">
                                 Edit
                             </a>
@@ -539,47 +545,45 @@
       </div>
   </section>
 
-  <div class="modal fade" id="pictureModal" tabindex="-1" aria-labelledby="pictureModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-          <span aria-hidden="true">&times;</span>
-        </button>
-        <button class="btn-prev" id="prevBtn">&lt;</button>
-        <button class="btn-next" id="nextBtn">&gt;</button>
-        <div class="modal-body">
-          <img id="modalImage" src="" alt="Picture">
+    <div class="modal fade" id="pictureModal" tabindex="-1" aria-labelledby="pictureModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <button class="btn-prev" id="prevBtn">&lt;</button>
+                <button class="btn-next" id="nextBtn">&gt;</button>
+                <div class="modal-body">
+                    <img id="modalImage" src="" alt="Picture">
+                </div>
+            </div>
         </div>
-      </div>
+    </div>  
+
+    <div class="modal fade" id="uploadModal">
+        <div class="modal-dialog">
+            <div class="modal-content"></div>
+        </div>
     </div>
-  </div>  
-  
-  
 
-  <div class="modal fade" id="uploadModal">
-      <div class="modal-dialog">
-          <div class="modal-content"></div>
-      </div>
-  </div>
-
-  <div class="modal fade" id="locationModal">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content"></div>
+    <div class="modal fade" id="locationModal">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content"></div>
+        </div>
     </div>
-</div>
 
-  <div class="modal fade" id="progress-modal">
-      <div class="modal-dialog">
-          <div class="modal-content">
-              <div class="modal-body text-center">
-                  <div class="spinner-border text-primary" role="status">
-                      <span class="visually-hidden">Loading...</span>
-                  </div>
-                  <p id="progress-modal-text">Uploading, please wait...</p>
-              </div>
-          </div>
-      </div>
-  </div>
+    <div class="modal fade" id="progress-modal">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-body text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p id="progress-modal-text">Uploading, please wait...</p>
+                </div>
+            </div>
+        </div>
+    </div>
 
 
 </div>
@@ -653,7 +657,17 @@ document.addEventListener('DOMContentLoaded', function () {
         const prevIndex = (currentIndex - 1 + pictureItems.length) % pictureItems.length;
         showImage(prevIndex);
     });
+
+    // Add zoom toggle functionality
+    modalImage.addEventListener('click', function () {
+        if (modalImage.classList.contains('enlarged')) {
+            modalImage.classList.remove('enlarged');
+        } else {
+            modalImage.classList.add('enlarged');
+        }
+    });
 });
+
    
     
 
@@ -774,7 +788,7 @@ $(function() {
             success: function(data) {
                 if (data.form_is_valid) {
                     $('#locationModal').modal('hide');
-                    location.reload(); // Reload the page if form submission is successful
+                    location.reload();
                 } else {
                     $("#locationModal .modal-content").html(data.html_form); // Reload the form if there are errors
                 }

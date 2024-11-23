@@ -26,11 +26,13 @@
         <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
     </div>
 </form>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.js"></script>
+<script src="{% static 'leaflet/leaflet.js' %}"></script>
 <script>
 
     var latitude = {{ form.latitude.value|default_if_none:7.188428 }};
     var longitude = {{ form.longitude.value|default_if_none:124.533772}};
-    var map = L.map('map-script').setView([latitude, longitude], 15);
+    var map = L.map('map-script').setView([latitude, longitude], 12);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,

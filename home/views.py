@@ -370,6 +370,26 @@ def edit_location(request, pk):
     data['html_form'] = render_to_string('business/edit_location.html', context, request=request)
     return JsonResponse(data)
 
+def location(request, pk):
+    business = get_object_or_404(Business, pk=pk)
+    if request.method == 'POST':
+        form = EditLocationForm(request.POST, instance=business)
+        if form.is_valid():
+            form.save()
+            UserLogs.objects.create(
+                user=request.user,
+                business=business,
+                latitude=business.latitude,
+                longitude=business.longitude,
+                action=f"Updated location to latitude: {business.latitude}, longitude: {business.longitude}"
+            )
+            return redirect("business")
+    else:
+        form = EditLocationForm(instance=business)
+
+    context = {'form': form}
+    return render(request, 'business/location.html', context)
+
 
 def upload_pictures(request):
     data = dict()

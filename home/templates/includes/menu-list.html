@@ -41,31 +41,55 @@
     {% endif %}
 
     {% if request.user.is_superuser %}
-    {% endif %}
-
-    {% if request.user.staff %}
     <li class="nav-item">
       <a href="{% url "map-view" %}" class="nav-link {% if 'profiles' in segment %} active {% endif %}">
-        <i class="nav-icon fas fa-th"></i>
+        <i class="nav-icon fas fa-map"></i>
         <p>Maps</p>
       </a>
     </li>
     <li class="nav-item">
       <a href="{% url "business" %}" class="nav-link {% if 'business' in segment %} active {% endif %}">
-        <i class="nav-icon fas fa-th"></i>
+        <i class="nav-icon fas fa-business-time"></i>
         <p>Busines</p>
       </a>
     </li>
     <li class="nav-item">
       <a href="{% url "collection" %}" class="nav-link {% if 'profiles' in segment %} active {% endif %}">
-        <i class="nav-icon fas fa-th"></i>
+        <i class="nav-icon fas fa-money-bill"></i>
         <p>Collection</p>
       </a>
     </li>
     <li class="nav-item">
       <a href="{% url "logout" %}" class="nav-link ">
-        <i class="nav-icon fas fa-th"></i>
-        <p>Signout</p>
+        <i class="nav-icon fas fa-user-alt"></i>
+        <p>Logout</p>
+      </a>
+    </li>
+    {% endif %}
+
+    {% if request.user.staff %}
+    <li class="nav-item">
+      <a href="{% url "map-view" %}" class="nav-link {% if 'profiles' in segment %} active {% endif %}">
+        <i class="nav-icon fas fa-map"></i>
+        <p>Maps</p>
+      </a>
+    </li>
+    <li class="nav-item">
+      <a href="{% url "business" %}" class="nav-link {% if 'business' in segment %} active {% endif %}">
+        <i class="nav-icon fas fa-business-time"></i>
+        <p>Busines</p>
+      </a>
+    </li>
+    <li class="nav-item">
+      <a href="{% url "collection" %}" class="nav-link {% if 'profiles' in segment %} active {% endif %}">
+        <i class="nav-icon fas fa-money-bill"></i>
+        <p>Collection</p>
+      </a>
+    </li>
+    <li class="nav-item">
+      <a href="{% url "logout" %}" class="nav-link ">
+        <i class="nav-icon fas fa-user-alt"></i>
+        <p>Logout</p>
       </a>
     </li>
   
@@ -74,32 +98,32 @@
     {% if request.user.admin %}
     <li class="nav-item">
       <a href="{% url "map-view" %}" class="nav-link {% if 'profiles' in segment %} active {% endif %}">
-        <i class="nav-icon fas fa-th"></i>
+        <i class="nav-icon fas fa-map"></i>
         <p>Maps</p>
       </a>
     </li>
     <li class="nav-item">
       <a href="{% url "business" %}" class="nav-link {% if 'business' in segment %} active {% endif %}">
-        <i class="nav-icon fas fa-th"></i>
+        <i class="nav-icon fas fa-business-time"></i>
         <p>Busines</p>
       </a>
     </li>
     <li class="nav-item">
       <a href="{% url "collection" %}" class="nav-link {% if 'profiles' in segment %} active {% endif %}">
-        <i class="nav-icon fas fa-th"></i>
+        <i class="nav-icon fas fa-money-bill"></i>
         <p>Collection</p>
       </a>
     </li>
     <li class="nav-item">
       <a href="{% url "user_logs" %}" class="nav-link {% if 'profiles' in segment %} active {% endif %} ">
-        <i class="nav-icon fas fa-th"></i>
-        <p>Users</p>
+        <i class="nav-icon fas fa-clipboard"></i>
+        <p>Users logs</p>
       </a>
     </li>
     <li class="nav-item">
       <a href="{% url "logout" %}" class="nav-link ">
-        <i class="nav-icon fas fa-th"></i>
-        <p>Signout</p>
+        <i class="nav-icon fas fa-user-alt"></i>
+        <p>Logout</p>
       </a>
     </li>
   
