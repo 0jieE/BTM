@@ -1,13 +1,19 @@
-# Core
-django==4.1.12
-python-dotenv==1.0.0
-
-# UI
-django-admin-adminlte==1.0.5
-
-# Deployment
-whitenoise==6.5.0
+asgiref==3.7.2
+beautifulsoup4==4.12.2
+distlib==0.3.7
+Django==4.1.12
+django-admin-material-dashboard==1.0.10
+django-bootstrap4==23.2
+filelock==3.12.4
 gunicorn==21.2.0
-
-# psycopg2-binary
-# mysqlclient
+packaging==23.2
+Pillow==10.1.0
+platformdirs==3.11.0
+python-dotenv==1.0.0
+setuptools==68.2.2
+soupsieve==2.5
+sqlparse==0.4.4
+tzdata==2023.3
+virtualenv==20.24.5
+wheel==0.41.2
+whitenoise==6.5.0
