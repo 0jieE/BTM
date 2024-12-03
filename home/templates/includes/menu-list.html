@@ -60,6 +60,12 @@
       </a>
     </li>
     <li class="nav-item">
+      <a href="{% url "user_logs" %}" class="nav-link {% if 'profiles' in segment %} active {% endif %} ">
+        <i class="nav-icon fas fa-clipboard"></i>
+        <p>Users logs</p>
+      </a>
+    </li>
+    <li class="nav-item">
       <a href="{% url "logout" %}" class="nav-link ">
         <i class="nav-icon fas fa-user-alt"></i>
         <p>Logout</p>

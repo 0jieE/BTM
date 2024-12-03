@@ -407,7 +407,7 @@ def upload_pictures(request):
             files = request.FILES.getlist('pictures')
             picture_objects = []
             for f in files:
-                picture = Picture.objects.create(business=business, picture=f)
+                picture = Picture.objects.create(business=business, business_name=business.business_name, picture=f)
                 picture_objects.append(picture)
             # Create a log entry with pictures
             log = UserLogs.objects.create(

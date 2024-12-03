@@ -208,6 +208,11 @@
             width: 100%; /* Make form controls responsive for smaller screens */
         }
     }
+    @media (max-width: 992px) {
+        .photos {
+            margin-top: 30px;
+        }
+    }
 </style>
 {% endblock extrastyle %}
 {% block bodyclass %}sidebar-collapse sidebar-mini dark-mode layout-navbar-fixed layout-fixed{% endblock bodyclass %}
@@ -299,30 +304,29 @@
                                <h2>Maps and Photos</h2>
                             </div>
                             <div class="sidebar-body-content">
-                                <div class="active tab-pane" id="map">
-                                    <br>
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <h6>Map</h6>
-                                    </div>
-                                    <div id="map">{{ map_html|safe }}</div>
-                                </div>
                                 <br>
                                 <div class="d-flex justify-content-between align-items-center">
+                                 <h6>Map</h6>
+                                </div>
+                                <div id="map">{{ map_html|safe }}</div>
+                                <div class="photos d-flex justify-content-between align-items-center">
                                     <h6>Photos</h6>
                                 </div>
                                 <div class="picture">
                                     {% if logs %}
                                         {% for log in logs %}
                                             {% if log.pictures.exists %}
-                                                <div class="log-header">
+                                                <div class="log-header col-12">
                                                     <span>{{ log.business }}</span>
                                                     <span class="timestamp"> {{ log.timestamp|date:"H:i:s" }}</span>
                                                 </div>
-                                                {% for picture in log.pictures.all %}
-                                                    <div class="picture-item">
-                                                        <img src="{{ picture.picture.url }}" alt="Picture" class="img-fluid">
-                                                    </div>
-                                                {% endfor %}
+                                                <div class="col-12 d-flex justify-content-between align-items-center">
+                                                    {% for picture in log.pictures.all %}
+                                                        <div class="picture-item">
+                                                            <img src="{{ picture.picture.url }}" alt="Picture" class="img-fluid">
+                                                        </div>
+                                                    {% endfor %}
+                                                </div>
                                             {% endif %}
                                         {% endfor %}
                                     {% else %}

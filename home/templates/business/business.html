@@ -495,10 +495,7 @@
                     <div class="active tab-pane" id="map">
                         <br>
                         <div class="d-flex justify-content-between align-items-center">
-                            <h6><a  href="{% url 'location' selected_business.pk %}">Map</a></h6>
-                            <a href="#" class="js-location" data-url="{% url 'edit-location' selected_business.pk%}">
-                                Edit
-                            </a>
+                            <h6><a  href="{% url 'location' selected_business.pk %}">Edit</a></h6>
                         </div>
                         <br>
                         <div id="map">{{ map_html|safe }}</div>

@@ -195,6 +195,7 @@ class BusinessYear(models.Model):
 
 class Picture(models.Model):
     business = models.ForeignKey(Business, on_delete=models.CASCADE)
+    business_name = models.CharField(max_length=200, unique=False, blank=True, null=True)
     picture = models.ImageField(upload_to=get_upload_to)
 
     def __str__(self):
