@@ -1,0 +1,401 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+{% block title %}Messages{% endblock title %}
+{% block extrastyle %}
+<link rel="stylesheet" href="{% static 'plugins/fontawesome-free/css/all.min.css' %}">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
+<style>
+    .messenger-container { display: flex; height: 85vh; }
+    .contacts-list, .chat-notifications { width: 25%; background-color: #343a40; padding: 15px; }
+    .chat-messages { width: 50%; background-color: #495057; display: flex; flex-direction: column; padding: 15px; }
+    .filters { margin-bottom: 15px; }
+    .contact-item { padding: 10px; color: white; margin-bottom: 10px; border-radius: 8px; cursor: pointer; transition: background-color 0.3s ease; }
+    .contact-item.paid { background-color: #1c7ed6; }
+    .contact-item.unpaid { background-color: #e63946; }
+    .contact-item:hover { background-color: #155ca1; }
+    .contact-item.unpaid:hover { background-color: #b21f2d; }
+    .scrollable-contact-list { max-height: 65vh; overflow-y: auto; }
+    @media (max-width: 768px) { .search-card { width: 100%; left: 0; top: 0; border-radius: 0; } .search-header { top: 0; left: 0; right: 0; } }
+    #contact-list::-webkit-scrollbar { width: 8px; background-color:  #495057; border-radius: 8px; }
+    #contact-list::-webkit-scrollbar-thumb { background-color: #007bff; border-radius: 8px; transition: background-color 0.3s ease; }
+    #contact-list::-webkit-scrollbar-thumb:hover { background-color: #0056b3; }
+    
+    .chat-header { font-size: 1.2rem; font-weight: bold; color: white; text-align: center; margin-bottom: 15px; }
+    .messages-container { display: flex; flex-direction: column; gap: 10px; }
+    .messages-container { max-height: 85vh; overflow-y: auto; padding: 10px; background-color: #495057; border-radius: 8px; scrollbar-width: thin; scrollbar-color: #007bff #f1f1f1; }
+    .messages-container::-webkit-scrollbar { width: 8px; background-color: #f1f1f1; border-radius: 8px; }
+    .messages-container::-webkit-scrollbar-thumb { background-color: #495057; border-radius: 8px; transition: background-color 0.3s ease; }
+    .messages-container::-webkit-scrollbar-thumb:hover { background-color: #0056b3; }
+
+    .chat-message { max-width: 70%; padding: 10px 15px; border-radius: 15px; font-size: 0.9rem; margin-bottom: 10px; word-wrap: break-word; }
+    .chat-message.contact { background-color: #adb5bd; color: black; align-self: flex-start; border-top-left-radius: 0; }
+    .chat-message.sent { background-color: #1c7ed6; color: white; }
+    .chat-message.failed {cursor: pointer; }
+    .chat-message.failed:hover { background-color: #b21f2d; }
+    .chat-message.admin { background-color: #1c7ed6; color: white; align-self: flex-end; border-top-right-radius: 0; }
+    .chat-input-container { display: flex; margin-top: 15px; }
+    .chat-input { flex: 1; background-color: #212529; color: #ced4da; border: none; border-radius: 8px; padding: 10px; }
+    .send-btn { background-color: #1c7ed6; color: white; border: none; padding: 10px 20px; border-radius: 8px; margin-left: 10px; }
+    .send-btn:hover { background-color: #155ca1; }
+
+    .contact-item.quarterly { border: 4px solid cyan; }
+    .contact-item.annual { border: 4px solid yellow; }
+    .contact-item.bi-annual { border: 4px solid green; }
+    .contact-item.default { border: 4px solid gray; }
+
+</style>
+{% endblock extrastyle %}
+{% block bodyclass %}sidebar-collapse sidebar-mini dark-mode layout-navbar-fixed layout-fixed{% endblock bodyclass %}
+{% block content %}
+<div class="content-wrapper">
+    <div class="container-fluid messenger-container">
+        <!-- Contacts List -->
+        <div class="contacts-list">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <input type="text" id="contact-search" class="form-control" placeholder="Search contacts..." onkeyup="filterContacts()">
+            </div>
+            <form class="filters d-flex gap-3 mb-4">
+                <select name="year" id="year" class="form-control" onchange="fetchContacts()">
+                    <option value="">All</option>
+                    {% for year in years %}
+                    <option value="{{ year }}" {% if year == current_year %}selected{% endif %}>{{ year }}</option>
+                    {% endfor %}
+                </select>                
+                <select name="payment_mode" id="payment_mode" class="form-control" onchange="fetchContacts()">
+                    <option value="">All</option>
+                    {% for mode in payment_modes %}
+                    <option value="{{ mode.id }}">{{ mode }}</option>
+                    {% endfor %}
+                </select>
+                <select name="paid" id="paid" class="form-control" onchange="fetchContacts()">
+                    <option value="">All</option>
+                    <option value="paid">Paid</option>
+                    <option value="unpaid">Unpaid</option>
+                </select>
+                <div>
+                    <a href="javascript:void(0);" id="sms-all-button" class="btn btn-success ms-2" onclick="smsAll()">
+                        smsAll
+                    </a>
+                </div>
+            </form>
+            <div id="contact-list" class="scrollable-contact-list">
+                {% for contact in contacts %}
+                <div class="contact-item {% if contact.paid %}paid{% else %}unpaid{% endif %}" 
+                     onclick="loadMessages({{ contact.id }})">
+                    {{ contact.business_name }}
+                    <p>{{ contact.mobile_no }}</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        <div id="loading-indicator" style="display: none;">Loading contacts...</div>
+        <div class="chat-messages">
+            <div id="chat-header">Messages</div>
+            <div id="messages-container" class="messages-container">
+                <p class="text-white">Select a contact to view messages.</p>
+            </div>            
+            <div id="chat-input-container" class="chat-input-container mt-3" style="display: none;">
+                <textarea id="chat-input" class="form-control chat-input" placeholder="Type a message..." rows="3"></textarea>
+                <button id="send-btn" class="btn send-btn" onclick="sendMessage()">Send</button>
+            </div>
+        </div>
+        
+        <div class="chat-notifications">
+            <h5 class="text-white">Notifications</h5>
+            <div class="text-white">No new notifications.</div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+{% block extra_scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const contactId = urlParams.get('contact_id'); 
+    
+        const selectedContactId = {{ selected_contact.id|default:"null" }};
+        const selectedContactName = "{{ selected_contact.business_name|default:'' }}";
+    
+        if (contactId) {
+            fetch(`/api/get-contacts/?contact_id=${contactId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.contacts && data.contacts.length > 0) {
+                        const contact = data.contacts[0];
+                        fetchMessages(contact.id, contact.business_name);
+                    } else {
+                        console.error("Contact not found or invalid.");
+                        alert("Invalid contact ID or contact not found.");
+                    }
+                })
+                .catch(error => {
+                    console.error("Failed to fetch contact details:", error);
+                });
+        } else if (selectedContactId) {
+            fetchMessages(selectedContactId, selectedContactName);
+        }
+    });
+    
+
+    async function fetchContacts() {
+        const yearDropdown = document.getElementById('year');
+        const currentYear = new Date().getFullYear();
+
+        if (!yearDropdown.value) {
+            yearDropdown.value = currentYear;
+        }
+
+        const year = yearDropdown.value;
+        const paymentMode = document.getElementById('payment_mode').value;
+        const paid = document.getElementById('paid').value;
+
+        const queryParams = new URLSearchParams({
+            year: year || '',
+            payment_mode: paymentMode || '',
+            paid: paid || '',
+        }).toString();
+
+        try {
+            const contactList = document.getElementById('contact-list');
+            contactList.innerHTML = '<div>Loading contacts...</div>';
+
+            const response = await fetch(`/api/get-contacts/?${queryParams}`);
+            if (!response.ok) {
+                throw new Error('Failed to fetch contacts');
+            }
+
+            const data = await response.json();
+
+            contactList.innerHTML = '';
+            data.contacts.forEach(contact => {
+                const contactDiv = document.createElement('div');
+
+                let borderColor = '';
+                switch (contact.payment_mode.toLowerCase()) {
+                    case 'quarterly':
+                        borderColor = 'cyan';
+                        break;
+                    case 'annual':
+                        borderColor = 'yellow';
+                        break;
+                    case 'bi-annual':
+                        borderColor = 'green';
+                        break;
+                    default:
+                        borderColor = 'gray'; 
+                }
+
+                contactDiv.className = `contact-item ${contact.paid ? 'paid' : 'unpaid'}`;
+                contactDiv.innerText = `${contact.business_name} (${contact.mobile_no})`;
+                contactDiv.style.border = `4px solid ${borderColor}`;
+                contactDiv.setAttribute('data-name', contact.business_name.toLowerCase());
+                contactDiv.onclick = () => fetchMessages(contact.id, contact.business_name);
+                contactList.appendChild(contactDiv);
+            });
+
+            const searchInput = document.getElementById('contact-search').value.toLowerCase();
+            if (searchInput) {
+                filterContacts(searchInput);
+            }
+        } catch (error) {
+            console.error('Error fetching contacts:', error);
+            alert('Failed to load contacts. Please try again.');
+        }
+    }
+
+    function filterContacts(query) {
+        const contactItems = document.querySelectorAll('.contact-item');
+        contactItems.forEach(contact => {
+            const contactName = contact.getAttribute('data-name');
+            contact.style.display = contactName.includes(query.toLowerCase()) ? 'block' : 'none';
+        });
+    }
+
+    async function fetchMessages(contactId, businessName) {
+        try {
+            const response = await fetch(`/api/get-messages/?contact_id=${contactId}`);
+            if (!response.ok) {
+                throw new Error('Failed to fetch messages');
+            }
+
+            const data = await response.json();
+
+            const messagesContainer = document.getElementById('messages-container');
+            messagesContainer.innerHTML = ''; 
+
+            data.messages.forEach(message => {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `chat-message ${message.sender === 'admin' ? 'admin' : 'contact'}`;
+                messageDiv.innerText = message.content;
+
+                if (message.sent_status === false) {
+                    messageDiv.classList.add('failed');
+                    messageDiv.setAttribute('data-message-id', message.id);
+                    messageDiv.setAttribute('onclick', `retryMessage(${message.id}, '${contactId}')`);
+                    messageDiv.style.color = 'white'; 
+                    messageDiv.style.backgroundColor = 'gray'; 
+
+                    const style = document.createElement('style');
+                    style.textContent = `
+                        .failed:hover {
+                            color: white !important;
+                            background-color: #b21f2d !important; 
+                        }
+                    `;
+                    document.head.appendChild(style);
+                } else {
+                    messageDiv.classList.add('sent');
+                }
+
+                messagesContainer.appendChild(messageDiv);
+            });
+
+            document.getElementById('chat-header').innerText = `Chat with ${businessName}`;
+            document.getElementById('chat-input-container').style.display = 'flex';
+            document.getElementById('send-btn').setAttribute('onclick', `sendMessage(${contactId})`);
+        } catch (error) {
+            console.error('Error fetching messages:', error);
+            alert('Failed to load messages. Please try again.');
+        }
+    }
+
+    async function sendMessage(contactId) {
+        const input = document.getElementById('chat-input');
+        const message = input.value.trim();
+
+        if (message === '') {
+            alert('Message cannot be empty!');
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/send-message/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message, contact_id: contactId }),
+            });
+
+            const messagesContainer = document.getElementById('messages-container');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'chat-message admin';
+            messageDiv.innerText = message;
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data.sent_status) {
+                    messageDiv.classList.add('sent');
+                } else {
+                    messageDiv.classList.add('failed');
+                    messageDiv.setAttribute('data-message-id', data.message_id);
+                    messageDiv.setAttribute('onclick', `retryMessage(${data.message_id}, '${contactId}')`);
+                    messageDiv.style.color = 'red'; 
+                }
+            } else {
+                throw new Error('Failed to send message');
+            }
+
+            messagesContainer.appendChild(messageDiv);
+            input.value = '';
+        } catch (error) {
+            alert('Failed to send message.');
+        }
+    }
+
+    async function retryMessage(messageId, contactId) {
+        const messageDiv = document.querySelector(`[data-message-id='${messageId}']`);
+        const messageContent = messageDiv.innerText;
+
+        try {
+            const response = await fetch('/api/send-message/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    message: messageContent,
+                    contact_id: contactId,
+                    message_id: messageId,
+                }),
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data.sent_status) {
+                    messageDiv.classList.remove('failed');
+                    messageDiv.classList.add('sent');
+                    messageDiv.removeAttribute('onclick');
+                    messageDiv.removeAttribute('data-message-id');
+                    messageDiv.style.color = '';
+                } else {
+                    alert('Retry failed. Message not sent.');
+                }
+            } else {
+                throw new Error('Retry failed');
+            }
+        } catch (error) {
+            alert('Retry failed. Could not connect to the server.');
+        }
+    }
+
+    async function smsAll() {
+        const year = document.getElementById('year').value;
+        const paymentMode = document.getElementById('payment_mode').value;
+        const paid = document.getElementById('paid').value;
+
+        const queryParams = new URLSearchParams({
+            message_all: 'true',
+        }).toString();
+
+        const response = await fetch(`/api/get-contacts/?${queryParams}`);
+        const data = await response.json();
+
+        if (data.is_message_all) {
+            document.getElementById('chat-header').innerText = 'Chat with ALL Contacts';
+            document.getElementById('messages-container').innerHTML = `
+                <p class="text-white">Compose a message for all filtered contacts.</p>
+            `;
+            document.getElementById('chat-input-container').style.display = 'flex';
+            document.getElementById('chat-input').setAttribute('placeholder', 'Type a message for all contacts...');
+            document.getElementById('send-btn').setAttribute('onclick', 'sendSmsAll()');
+        }
+    }
+
+    async function sendSmsAll() {
+        const input = document.getElementById('chat-input');
+        const message = input.value.trim();
+
+        if (!message) {
+            alert('Message cannot be empty.');
+            return;
+        }
+
+        const year = document.getElementById('year').value;
+        const paymentMode = document.getElementById('payment_mode').value;
+        const paid = document.getElementById('paid').value;
+
+        const response = await fetch('/api/send-message/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                message,
+                filters: { year, payment_mode: paymentMode, paid },
+            }),
+        });
+
+        if (response.ok) {
+            alert('Message sent to all filtered contacts!');
+            input.value = '';
+        } else {
+            alert('Failed to send message.');
+        }
+    }
+
+    document.getElementById('contact-search').addEventListener('keyup', (event) => {
+        const query = event.target.value.toLowerCase();
+        filterContacts(query);
+    });
+
+    fetchContacts();
+</script>
+
+{% endblock extra_scripts %}

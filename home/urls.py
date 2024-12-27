@@ -26,4 +26,10 @@ urlpatterns = [
     path('user-logs/', views.user_logs_view, name='user_logs'),
     path('get-user-logs/<int:user_id>/', views.get_user_logs, name='get_user_logs'),
     path('user-logs/logs-pdf', views.logs_report_pdf, name='logs-pdf'),
+
+    path('sms/', views.sms_view, name='sms'),
+    path('api/get-contacts/', views.get_contacts, name='get_contacts'),
+    path('api/get-messages/', views.get_messages, name='get_messages'),
+    path('api/send-message/', views.send_message, name='send_message'),
+
 ]

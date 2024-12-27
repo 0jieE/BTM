@@ -13,324 +13,67 @@
     <link rel="stylesheet" href="{% static 'plugins/fontawesome-free/css/all.min.css' %}">
     <link rel="stylesheet" href="{% static 'dist/css/adminlte.min.css' %}">
     <link rel="stylesheet" href="{% static 'leaflet/leaflet.css' %}">
+    
     <style>
-        html, body, .content-wrapper, .content, .container-fluid, .row, .card {
-            height: 100%;
-            margin: 0;
-            padding: 0;
-        }
-        .card-body {
-            padding: 0;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-        }
-        #map {
-            flex: 1;
-            position: relative;
-        }
-        #radius-control {
-            position: absolute;
-            top: 10px;
-            left: 50px;
-            z-index: 1000;
-            background: white;
-            padding: 5px;
-            border-radius: 5px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-        }
+        html, body, .content-wrapper, .content, .container-fluid, .row, .card { height: 100%; margin: 0; padding: 0; }
+        .card-body { padding: 0; display: flex; flex-direction: column; height: 100vh; }
+        #map { flex: 1; position: relative; }
+        #radius-control { position: absolute; top: 10px; left: 50px; z-index: 1000; background: white; padding: 5px; border-radius: 5px; box-shadow: 0 2px 6px rgba(0,0,0,0.3); }
+        .leaflet-control-custom { display: flex; flex-direction: column; align-items: center; background: rgba(255, 255, 255, 0.1); padding: 5px; border-radius: 10px; }
+        .home-button { margin-bottom: 0; }
+        .home-button i { font-size: 20px; padding: 0; }
+        .zoom-slider-container { width: 20px; height: 150px; display: flex; justify-content: center; align-items: center; }
+        #home-slider, #zoom-slider { transform: rotate(-90deg); transform-origin: center; width: 150px; height: 20px; margin: auto; }
+        .leaflet-control-layers-overlays { display: flex; flex-direction: row; flex-wrap: wrap; align-items: center; }
+        .leaflet-control-layers-overlays label { display: flex; align-items: center; margin-right: 10px; }
+        .leaflet-control-layers-overlays input { margin-right: 5px; }
+        .checkbox-quarterly { accent-color: #00FFFF; }
+        .checkbox-annual { accent-color: #FFFF00; }
+        .checkbox-bi-annual { accent-color: #00FF00; }
+        .tag { display: flex; align-items: center; margin-right: 10px; margin-bottom: 8px; }
+        .circle { width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; }
+        .renewed { background-color: #0000FF; }
+        .expired { background-color: #FF0000; }
+        #radius-slider { display: inline-block; margin-bottom: 8px; }
 
+        .search-body { display: none; flex: 1; overflow-y: auto; padding: 15px; background: #fff; border-radius: 0 0 8px 8px; box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.1); max-height: calc(100vh - 300px); }
+        .search-body::-webkit-scrollbar { width: 8px; background-color: #f1f1f1; border-radius: 8px; }
+        .search-body::-webkit-scrollbar-thumb { background-color: #007bff; border-radius: 8px; transition: background-color 0.3s ease; }
+        .search-body::-webkit-scrollbar-thumb:hover { background-color: #0056b3; }
+        .search-card { max-height: calc(100vh - 200px); margin: 0; padding: 0; position: absolute; top: 10px; left: 10px; z-index: 1000; width: 400px; border-radius: 8px; background: #ffffff; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); border: 1px solid #e9ecef; display: flex; flex-direction: column; }
+        .search-header { position: sticky; top: 0; z-index: 1001; padding: 15px; background: linear-gradient(135deg, #f8f9fa, #e9ecef); border-bottom: 1px solid #ddd; border-radius: 8px 8px 0 0; display: flex; align-items: center; gap: 10px; }
+        #search-input, #year-filter, #month-filter { flex: 1; padding: 8px 12px; font-size: 14px; border: 1px solid #ccc; border-radius: 5px; transition: box-shadow 0.3s ease; }
+        #search-input:focus, #year-filter:focus, #month-filter:focus { box-shadow: 0 0 5px rgba(0, 123, 255, 0.5); border-color: #007bff; }
+        #business-list { list-style-type: none; margin: 0; padding: 0; }
+        .list-group-item { cursor: pointer; padding: 12px 15px; border-bottom: 1px solid #f1f1f1; background: #ffffff; transition: background-color 0.3s ease, box-shadow 0.3s ease; border-radius: 5px; }
+        .list-group-item:hover { background-color: #f1faff; box-shadow: 0 2px 5px rgba(0, 123, 255, 0.2); }
+        @media (max-width: 768px) { .search-card { width: 100%; left: 0; top: 0; border-radius: 0; } .search-header { top: 0; left: 0; right: 0; } }
+              
+        .chart-card { position: absolute; top: 60px; left: 50%; transform: translateX(-50%); background: rgba(255, 255, 255, 0); border-radius: 5px; z-index: 1000; width: 1200px; max-height: calc(100vh - 200px); }
+        #toggle-chart { position: absolute; top: -50px; left: 50%; transform: translateX(-50%); z-index: 1001; background: white; border: 1px solid #ccc; border-radius: 4px; padding: 5px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); width: auto; min-width: 150px; }
+        .chart-bars { width: 100%; height: 100%; }
+        .chart-body { margin-top: 20px; }
+        .monthly-report { background: white; border-radius: 0.25rem; box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 10); padding: 20px; margin-top: 10px; }
+        .report-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .report-title { font-size: 1.5rem; font-weight: bold; margin: 0; }
+        .summary-card { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); background: rgba(255, 255, 255, 0.1); padding: 10px; border-radius: 5px; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3); z-index: 1000; width: 80%; max-width: 1200px; }
 
-        .leaflet-control-custom {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            background: rgba(255, 255, 255, 0.1); /* Increased transparency */
-            padding: 5px;
-            border-radius: 10px;
-        }
-        .home-button {
-            margin-bottom: 0;
-        }
-        .home-button i {
-            font-size: 20px;
-            padding:0;
-        }
-        .zoom-slider-container {
-            width: 20px; /* Adjust the width as needed */
-            height: 150px; /* Adjust the height as needed */
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        #home-slider {
-            transform: rotate(-90deg);
-            transform-origin: center;
-            width: 150px; /* Adjust based on height */
-            height: 20px; /* Adjust based on width */
-            margin: auto;
-        }
-        #zoom-slider {
-            transform: rotate(-90deg);
-            transform-origin: center;
-            width: 150px; /* Adjust based on height */
-            height: 20px; /* Adjust based on width */
-            margin: auto;
-        }
+        .image-container { position: relative; text-align: center; width: 100%; height: 300px; overflow: hidden; background: #f5f5f5; }
+        .image-container img { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: auto; height: 300px; object-fit: cover; }
+        .image-container img:first-child { display: block; }
+        .btn-prev, .btn-next { position: absolute; top: 50%; transform: translateY(-50%); background-color: rgba(0, 0, 0, 0.5); color: #fff; border: none; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 10; transition: background-color 0.3s ease; }
+        .btn-prev { left: 10px; }
+        .btn-next { right: 10px; }
+        .btn-prev:hover, .btn-next:hover { background-color: rgba(0, 0, 0, 0.8); }
+        @media (max-width: 768px) { .btn-prev, .btn-next { width: 30px; height: 30px; font-size: 16px; } }
+        #businessImage { max-height: 300px; object-fit: cover; }
+        #businessDetailsModal .btn-outline-primary { min-width: 100px; }
+        #businessDetailsModal h4 { margin-bottom: 0.5rem; }
+        #businessDetailsModal p { margin-bottom: 0.5rem; }
 
-
-        .leaflet-control-layers-overlays {
-            display: flex;
-            flex-direction: row;
-            flex-wrap: wrap;
-            align-items: center;
-        }
-        .leaflet-control-layers-overlays label {
-            display: flex;
-            align-items: center;
-            margin-right: 10px;
-        }
-        .leaflet-control-layers-overlays input {
-            margin-right: 5px;
-        }
-        .checkbox-quarterly {
-            accent-color: #00FFFF;
-        }
-        .checkbox-annual {
-            accent-color: #FFFF00;
-        }
-        .checkbox-bi-annual {
-            accent-color: #00FF00;
-        }
-        .tag {
-            display: flex;
-            align-items: center;
-            margin-right: 10px;
-            margin-bottom: 8px;
-        }
-        .circle {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            margin-right: 5px;
-        }
-        .renewed {
-            background-color: #0000FF;
-        }
-        .expired {
-            background-color: #FF0000;
-        }
-        #radius-slider {
-            display: inline-block;
-            margin-bottom: 8px;
-        }
-        .search-card {
-            max-height: calc(100vh - 200px);
-            overflow-y: auto;
-            list-style-type: none;
-            margin: 0;
-            padding: 0;
-            position: absolute;
-            top: 10px; 
-            left: 10px;
-            z-index: 1000;
-            width: 400px; /* Adjust width as needed */
-            border-radius: 5px;
-            background: white;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-        
-        .search-header {
-            position: fixed;
-            border-bottom: 1px solid #e9ecef;
-            z-index: 1001;
-            border-radius: 5px 5px 0 0;
-            background: #f8f9fa;
-        }
-        #search-input {
-            width : 250px;
-        }
-        .btn {
-            width : 100px;
-        }
-
-        #month-filter {
-            width : 100px;
-        }
-
-        #year-filter {
-            width : 100px;
-        }
-        
-        .search-body {
-            margin-top: 40px; 
-            display: none; /* Hide search results initially */
-        }
-        
-        .input-group {
-            display: flex;
-            align-items: center;
-        }
-        
-        #business-list {
-            flex: 1;
-            overflow-y: auto;
-            list-style-type: none;
-            margin: 0;
-            padding: 0;
-            border-radius-bottom: 15px;
-        }
-        
-        .list-group-item {
-            cursor: pointer;
-            padding: 10px 15px;
-            border-bottom: 1px solid #e9ecef;
-        }
-        
-        .list-group-item:hover {
-            background-color: #f8f9fa;
-        }
-        
-        .input-group-append .btn {
-            padding: 0.375rem 0.75rem;
-            border-radius: 0.25rem;
-        }
-        
-        @media (max-width: 768px) {
-            .search-card {
-                width: 100%;
-                left: 0;
-                top: 0;
-                border-radius: 0;
-            }
-            .search-header {
-                top: 0;
-                left: 0;
-                right: 0;
-            }
-        }
-
-        .chart-card {
-            position: absolute;
-            top: 60px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(255, 255, 255, 0);
-            border-radius: 5px;
-            z-index: 1000;
-            width: 1200px;
-            max-height: calc(100vh - 200px);
-        }
-        
-        #toggle-chart {
-            position: absolute;
-            top: -50px;  /* Position above the chart card */
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 1001; /* Ensure it appears above other elements */
-            background: white;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            padding: 5px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            width: auto;
-            min-width: 150px;
-        }  
-
-        .chart-bars {
-            width: 100%;
-            height: 100%;
-        }
-        
-        .chart-body {
-            margin-top: 20px;
-        } 
-        
-        .monthly-report {
-            background: white;
-            border-radius: 0.25rem;
-            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 10);
-            padding: 20px;
-            margin-top: 10px;
-        }
-
-        .report-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-        
-        .report-title {
-            font-size: 1.5rem;
-            font-weight: bold;
-            margin: 0;
-        }
-        
-        .summary-card {
-            position: absolute;
-            bottom: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(255, 255, 255, 0.1); /* Increased transparency */
-            padding: 10px;
-            border-radius: 5px;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
-            z-index: 1000;
-            width: 80%; /* Adjust the width as needed */
-            max-width: 1200px; /* Set a maximum width */
-        }   
-     
-        .image-container {
-            position: relative;
-            width: 100%;
-            height: auto;
-        }
-        
-        .image-container img {
-            width: 100%;
-            height: auto;
-            display: block;
-        }
-        
-        .btn-prev, .btn-next {
-            position: absolute;
-            top: 50%;
-            transform: translateY(-50%);
-            background-color: rgba(0, 0, 0, 0.5);
-            color: white;
-            border: none;
-            padding: 10px;
-            cursor: pointer;
-            z-index: 10;
-            font-size: 18px;
-        }
-        
-        .btn-prev {
-            left: 10px;
-        }
-        
-        .btn-next {
-            right: 10px;
-        }
-        
-        #prog-modal .modal-content {
-            background-color: rgba(0, 0, 0, 0.5); /* Slight transparency */
-            border: none;
-            box-shadow: none;
-            z-index: 1050;
-        }
-        
-        .modal-backdrop {
-            z-index: 1040 !important;
-        }
-        
-        .modal-dialog-centered {
-            z-index: 1050 !important;
-        }
-        
-        
-
+        #prog-modal .modal-content { background-color: rgba(0, 0, 0, 0.5); border: none; box-shadow: none; z-index: 1050; }
+        .modal-backdrop { z-index: 1040 !important; }
+        .modal-dialog-centered { z-index: 1050 !important; }            
     </style>
 </head>
 <body class="sidebar-collapse sidebar-mini">
@@ -366,14 +109,12 @@
                                             </form>
                                         </div>
                                         <div class="search-body">
-                                            <ul id="business-list" class="list-group">
-                                                <!-- List the Businesses here -->
-                                            </ul>
+                                            <ul id="business-list" class="list-group"></ul>
                                         </div>
                                     </div>  
                                     <div class="chart-card">
                                         <button id="toggle-chart" class="btn btn-primary">
-                                            <i class="fas fa-angle-down"></i>
+                                            <i class="fas fa-angle-down">Chart</i>
                                         </button>
                                         
                                         <div class="chart-body">
@@ -508,7 +249,56 @@
                 </div>
             </div>
         </div>
-
+        <div class="modal fade" id="businessDetailsModal" tabindex="-1" role="dialog" aria-labelledby="businessDetailsModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content">
+                    <!-- Modal Header -->
+                    <div class="modal-header p-0 border-0">
+                        <div id="businessImages" class="image-container">
+                            <!-- Images dynamically injected here -->
+                            <img src="https://yourdomain.com/uploads/image1.jpg" alt="Image 1">
+                            <img src="https://yourdomain.com/uploads/image2.jpg" alt="Image 2">
+                            <button class="btn btn-primary btn-prev">
+                                <i class="fas fa-chevron-left"></i>
+                            </button>
+                            <button class="btn btn-primary btn-next">
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                        
+                    </div>
+        
+                    <!-- Modal Body -->
+                    <div class="modal-body">
+                        <!-- Business Info -->
+                        <div class="text-center">
+                            <h4 id="businessTitle" class="font-weight-bold"></h4>
+                            <p id="businessOwner" class="text-muted mb-1"></p>
+                            <p id="businessContact" class="mb-3"></p>
+                        </div>
+        
+                        <!-- Action Links -->
+                        <div class="d-flex justify-content-around mb-3">
+                            <a href="#" id="directionsLink" target="_blank" class="btn btn-outline-primary">Directions</a>
+                            <a href="#" id="contactLink" target="_blank" class="btn btn-outline-primary">Contact</a>
+                            <a href="#" id="shareLink" target="_blank" class="btn btn-outline-primary">Share</a>
+                        </div>
+        
+                        <!-- Business Details -->
+                        <div id="businessDetails"></div>
+                    </div>
+        
+                    <!-- Modal Footer -->
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+        
     </div>
     <script src="{% static 'js/jquery-3.6.0.min.js' %}"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
@@ -650,54 +440,105 @@
         };
     
         function popupContent(business) {
-            if (business.picture_html) {
-                return `
-                    <b>${business.name}</b><br>${business.location}<br>
-                    <div class="image-container">
-                        ${business.picture_html}
-                        <button class="btn-prev" id="prevBtn">&lt;</button>
-                        <button class="btn-next" id="nextBtn">&gt;</button>
-                    </div>`;
-            } else {
-                return `
-                    <b>${business.name}</b><br>${business.location}`;
-            }
+            return `
+                <b>${business.name}</b><br>${business.location}`;
         }
-    
-        function handlePopupOpen(e) {
-            var currentImageIndex = 0;
-            var images = e.popup._contentNode.querySelectorAll('.image-container img');
+
+        function handleMarkerClick(business) {
+            $('#businessDetailsModalLabel').text(business.name);
+            $('#businessDetailsModal').modal('show');
         
-            if (images.length > 0) {
+      
+            $('#businessTitle').text(business.name);
+            $('#businessOwner').text(`Owner: ${business.owner || 'Not available'}`);
+            $('#businessContact').text(`Mobile no: ${business.mobile_no || business.telephone_no || 'Not available'}`);
+        
+
+            if (business.directions_link) {
+                $('#directionsLink').attr('href', business.directions_link).text('Directions').show();
+            } else {
+                $('#directionsLink').hide();
+            }
+            $('#contactLink').attr('href',`/sms/?contact_id=${business.id || ''}`).text('Contact').show();
+
+            $('#shareLink').attr('href', business.share_link || '#').text('Share').show();
+        
+
+            const $businessDetails = $('#businessDetails');
+            $businessDetails.empty(); 
+        
+            if (business.location) {
+                $businessDetails.append(`<p><strong>Location:</strong> ${business.location}</p>`);
+            }
+            if (business.application_date) {
+                $businessDetails.append(`<p><strong>Application Date:</strong> ${business.application_date}</p>`);
+            }
+            if (business.business_nature) {
+                $businessDetails.append(`<p><strong>Business Nature:</strong> ${business.business_nature}</p>`);
+            }
+            if (business.capital_investment) {
+                $businessDetails.append(
+                    `<p><strong>Capital Investment:</strong> Php ${parseFloat(business.capital_investment).toLocaleString()}</p>`
+                );
+            }
+            if (business.gross_sales) {
+                $businessDetails.append(
+                    `<p><strong>Gross Sales:</strong> Php ${parseFloat(business.gross_sales).toLocaleString()}</p>`
+                );
+            }
+        
+            $('#businessImages').html(`
+                <div class="image-container">
+                    ${business.picture_html || '<p>No images available</p>'}
+                    <button class="btn btn-primary btn-prev">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <button class="btn btn-primary btn-next">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            `);
+            
+            const images = document.querySelectorAll('.image-container img');
+            let currentImageIndex = 0;
+            
+            if (images.length <= 1) {
+                $('.btn-prev').hide();
+                $('.btn-next').hide();
+            } else {
+                $('.btn-prev').show();
+                $('.btn-next').show();
+            
                 images.forEach((img, index) => {
-                    if (index !== currentImageIndex) {
-                        img.style.display = 'none';
-                    }
+                    img.style.display = index === currentImageIndex ? 'block' : 'none';
                 });
-        
+            
                 function showImage(index) {
                     images.forEach((img, i) => {
                         img.style.display = i === index ? 'block' : 'none';
                     });
                 }
-        
-                function showNextImage() {
+            
+                $('.btn-next').off('click').on('click', function () {
                     currentImageIndex = (currentImageIndex + 1) % images.length;
                     showImage(currentImageIndex);
-                }
-        
-                function showPrevImage() {
+                });
+            
+                $('.btn-prev').off('click').on('click', function () {
                     currentImageIndex = (currentImageIndex - 1 + images.length) % images.length;
                     showImage(currentImageIndex);
-                }
-        
-                e.popup._contentNode.querySelector('#prevBtn').onclick = showPrevImage;
-                e.popup._contentNode.querySelector('#nextBtn').onclick = showNextImage;
+                });
             }
+            
+
+
         }
+        
+        
+        
+              
     
         function markerHighlightEvent(marker, businessId) {
-            let isMarkerClicked = false;
             marker
                 .on('mouseover', function(e) {
                     const currentCenter = map.getCenter();
@@ -705,44 +546,30 @@
         
                     marker.setStyle({
                         weight: 5,
-                        color: '#666',
                         dashArray: '',
                         fillOpacity: 0.7
                     });
                     marker.openPopup();
-                    handlePopupOpen({ popup: marker.getPopup() });
-        
-                    // Restore the map view to the current center and zoom after opening the popup
                     map.setView(currentCenter, currentZoom, { animate: false });
                 })
                 .on('mouseout', function(e) {
-                    if (!isMarkerClicked) {
-                        marker.setStyle({
-                            weight: 2,
-                            color: '#3388ff',
-                            dashArray: '',
-                            fillOpacity: 0.7
-                        });
-                        marker.closePopup();
-                    }
+                    marker.setStyle({
+                        weight: 2,
+                        dashArray: '',
+                        fillOpacity: 0.7
+                    });
+                    marker.closePopup();  
                 })
-                .on('click', function(e) {
-
-                    isMarkerClicked = true;
-                    map.setView(currentCenter, currentZoom, { animate: false });
-                    handlePopupOpen({ popup: marker.getPopup() });
-                    marker.getPopup().options.closeOnClick = false;
-                });
         }
-        
-        
+    
         function addMarkers(businesses) {
-            for (var i = 0; i < businesses.length; i++) {
-                var business = businesses[i];
-                var circleOptions = getCircleOptions(business.payment_mode, business.paid, currentRadius);
+            for (let i = 0; i < businesses.length; i++) {  // Use `let` to create a block-scoped variable
+                const business = businesses[i]; // Assign the current business to a constant
+                const circleOptions = getCircleOptions(business.payment_mode, business.paid, currentRadius);
         
-                var marker = L.circleMarker([business.latitude, business.longitude], circleOptions)
-                    .bindPopup(popupContent(business))
+                // Create the marker and bind a popup
+                const marker = L.circleMarker([business.latitude, business.longitude], circleOptions)
+                    .bindPopup(popupContent(business));
         
                 markerHighlightEvent(marker, business.id);
         
@@ -752,8 +579,15 @@
         
                 marker.addTo(paymentModeLayers[business.payment_mode]);
                 markers[business.id] = marker;
+        
+                // Correctly bind the click handler using the current `business`
+                marker.on('click', function () {
+                    handleMarkerClick(business); // Pass the correct business object to the handler
+                    map.setView(marker.getLatLng(), map.getZoom(), { animate: true });
+                });
             }
         }
+        
     
         function loadBusinesses() {
             const businesses = JSON.parse('{{ businesses_json|escapejs }}');
@@ -936,16 +770,15 @@
             $('.leaflet-control-layers-overlays').append(`
                 <div class="tag">
                     <div class="circle renewed"></div>
-                    <span>Renewed</span>
+                    <span>Paid</span>
                 </div>
                 <div class="tag">
                     <div class="circle expired"></div>
-                    <span>Expired</span>
+                    <span>Unpaid</span>
                 </div>
                 <input type="range" id="radius-slider" min="2" max="20" value="8">
             `);
     
-            // Radius control event listener
             $('#radius-slider').on('input', function() {
                 currentRadius = $(this).val();
                 Object.values(markers).forEach(function(marker) {
@@ -994,7 +827,7 @@
             });
         }
     
-        // Add all payment mode layers to the map initially and check the checkboxes
+   
         for (var mode in paymentModeLayers) {
             if (paymentModeLayers[mode]) {
                 paymentModeLayers[mode].addTo(map);
@@ -1008,7 +841,6 @@
         function updateChart(labels, totalData, annualData, quarterlyData, biAnnualData) {
             var areaChartCanvas = $('#areaChart').get(0).getContext('2d')
             
-            // Update the chart data
             var areaChartData = {
                 labels: labels,
                 datasets: [
@@ -1111,14 +943,11 @@
         }
         
 
-        // Initially hide the chart
         $('.chart-body').hide();
 
         $('#toggle-chart').on('click', function() {
-            // Toggle the visibility of the chart
             $('.chart-body').toggle();
 
-            // Toggle the icon
             var icon = $(this).find('i');
             if ($('.chart-body').is(':visible')) {
                 icon.removeClass('fa-angle-down').addClass('fa-angle-up');
@@ -1155,23 +984,23 @@
                 data: formData,
                 type: form.attr('method'),
                 dataType: 'json',
-                contentType: false,  // Prevent jQuery from overriding content type
-                processData: false,  // Prevent jQuery from processing data
+                contentType: false, 
+                processData: false,  
                 beforeSend: function() {
-                    $('#calculateModal').modal('hide');  // Hide the form modal
+                    $('#calculateModal').modal('hide'); 
                     console.log('Showing progress modal...');
-                    $('#prog-modal').modal('show');  // Show the progress modal
+                    $('#prog-modal').modal('show'); 
                 },
                 success: function(response) {
-                    $('#prog-modal .spinner-border').hide();  // Hide spinner after success
+                    $('#prog-modal .spinner-border').hide();
                     if (response.form_is_valid) {
-                        location.reload();  // Reload the page after successful save
+                        location.reload();  
                     } else {
                         console.log('Form was not valid.');
                     }
                 },
                 error: function(response) {
-                    console.log(response);  // Log any errors for debugging
+                    console.log(response); 
                 }
             });
         };

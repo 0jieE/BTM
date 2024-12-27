@@ -127,6 +127,12 @@
       </a>
     </li>
     <li class="nav-item">
+      <a href="{% url "sms" %}" class="nav-link {% if 'profiles' in segment %} active {% endif %} ">
+        <i class="nav-icon fas fa-paper-plane"></i>
+        <p>SMS</p>
+      </a>
+    </li>
+    <li class="nav-item">
       <a href="{% url "logout" %}" class="nav-link ">
         <i class="nav-icon fas fa-user-alt"></i>
         <p>Logout</p>

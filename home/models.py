@@ -141,44 +141,40 @@ class Business(models.Model):
         if year_filter_int is None:
             return False
 
-        # Fetch collections associated with the business for the specified year
+        # Base queryset: Collections for the specified year
         collections = self.collection_set.filter(date_time__year=year_filter_int)
-        collection_dates = list(collections.values_list('date_time', flat=True))
 
         payment_mode = self.payment_mode.name.lower()
 
         if payment_mode == 'annual':
             # Annual: Any collection within the year is sufficient
-            return bool(collection_dates)
+            return collections.exists()
 
         elif payment_mode == 'bi-annual':
             # Bi-annual: Check if payments exist in the relevant half-year period
             if month_filter_int:
                 if month_filter_int <= 6:
-                    relevant_months = range(1, 7)
+                    collections = collections.filter(date_time__month__in=range(1, 7))
                 else:
-                    relevant_months = range(7, 13)
-            else:
-                relevant_months = range(1, 13)  # Consider the whole year if no month is specified
-
-            return any(date.month in relevant_months for date in collection_dates)
+                    collections = collections.filter(date_time__month__in=range(7, 13))
+            # Return True if any collection exists
+            return collections.exists()
 
         elif payment_mode == 'quarterly':
-            # Quarterly: Determine relevant months in the quarter
+            # Quarterly: Check if payments exist in the relevant quarter
             if month_filter_int:
                 if month_filter_int <= 3:
-                    relevant_months = range(1, 4)
+                    collections = collections.filter(date_time__month__in=range(1, 4))
                 elif month_filter_int <= 6:
-                    relevant_months = range(4, 7)
+                    collections = collections.filter(date_time__month__in=range(4, 7))
                 elif month_filter_int <= 9:
-                    relevant_months = range(7, 10)
+                    collections = collections.filter(date_time__month__in=range(7, 10))
                 else:
-                    relevant_months = range(10, 13)
-            else:
-                relevant_months = range(1, 13)  # Consider the whole year if no month is specified
+                    collections = collections.filter(date_time__month__in=range(10, 13))
+            # Return True if any collection exists
+            return collections.exists()
 
-            return any(date.month in relevant_months for date in collection_dates)
-
+        # Return False if payment mode is unhandled
         return False
 
 
@@ -340,3 +336,15 @@ class UserLogs(models.Model):
 
     def __str__(self):
         return f"Log by {self.user.username} on {self.timestamp}"
+
+
+
+class AdminMessage(models.Model):
+    contact = models.ForeignKey(Business, on_delete=models.CASCADE, related_name="messages")
+    sender = models.CharField(max_length=10, choices=[("admin", "Admin"), ("contact", "Contact")])
+    content = models.TextField()
+    timestamp = models.DateTimeField(auto_now_add=True)
+    sent_status = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"{self.contact.business_name} - {self.sender} - {self.timestamp}"

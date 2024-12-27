@@ -4,8 +4,8 @@ from django.http import HttpResponse, JsonResponse
 from django.template.loader import render_to_string
 import folium
 from django.views import View
-from .forms import UploadBusinessFileForm, UploadCollectionFileForm, StaffRegistrationForm, LoginForm,YearSelectionForm,AdminRegistrationForm,EditLocationForm
-from .models import Business,BusinessYear, PaymentMode, BusinessType, ApplicationMethod, Collection,Picture, MonthlyCalculation, YearlyCalculation,UserLogs,User
+from .forms import *
+from .models import *
 from datetime import datetime 
 import logging
 from django.utils import timezone
@@ -29,6 +29,7 @@ import calendar
 from django.utils.timezone import now
 from xhtml2pdf import pisa
 from django.template.loader import get_template
+from django.views.decorators.csrf import csrf_exempt
 
 logger = logging.getLogger(__name__)
 
@@ -128,16 +129,30 @@ def map_view(request):
     businesses_data = []
     for business in businesses_with_location:
         paid_status = business.has_paid(year_filter_int, month_filter_int)
+
+        owner_name = f"{business.first_name or ''} {business.middle_name or ''} {business.last_name or ''}".strip()
+
+
         businesses_data.append({
             'id': business.id,
             'name': business.business_name,
+            'owner': owner_name,
+            'mobile_no': business.mobile_no,
+            'telephone_no': business.telephone_no,
             'location': business.location,
+            'capital_investment': business.capital_investment,
+            'gross_sales': business.gross_sales,
+            'business_nature': business.business_nature,
             'latitude': business.latitude,
             'longitude': business.longitude,
             'payment_mode': business.payment_mode.name,
             'paid': paid_status,
             'picture_html': business.get_picture_html(),
+            "directions_link": f"https://maps.google.com/?q={business.latitude},{business.longitude}" if business.latitude and business.longitude else None,
+            "save_link": "#",
+            "share_link": "#",
         })
+
         
 
     all_years = BusinessYear.objects.values_list('year', flat=True).distinct().order_by('year')
@@ -271,8 +286,6 @@ def business(request):
     selected_business_id = request.GET.get('business_id')
 
     businesses = Business.objects.filter(years__year=selected_year).distinct()
-
-    # Get unique years from the BusinessYear model
     years = BusinessYear.objects.values_list('year', flat=True).distinct().order_by('year')
 
     if not selected_business_id and businesses.exists():
@@ -282,7 +295,6 @@ def business(request):
 
     pictures = Picture.objects.filter(business=selected_business) if selected_business else []
 
-    # Query collections for the selected business and group by year
     collections_by_year = {}
     if selected_business:
         collections = Collection.objects.filter(linked_business=selected_business).annotate(
@@ -862,5 +874,225 @@ def UploadCollectionFileView(request):
     context = {'collection_form': collection_form}
     data['html_form'] = render_to_string('upload_collection.html', context, request=request)
     return JsonResponse(data)
+
+
+
+
+
+
+
+
+
+
+
+
+
+def sms_view(request):
+    years = BusinessYear.objects.values_list('year', flat=True).distinct()
+    current_year = dt.now().year
+    payment_modes = PaymentMode.objects.all()
+
+    contact_id = request.GET.get('contact_id')
+    selected_contact = None
+
+    if contact_id and contact_id.isdigit():
+        try:
+            selected_contact = Business.objects.get(id=int(contact_id))
+        except Business.DoesNotExist:
+            selected_contact = None
+
+    return render(request, 'sms/sms.html', {
+        'years': years,
+        'payment_modes': payment_modes,
+        'current_year': current_year,
+        'selected_contact': selected_contact,
+    })
+
+
+def get_contacts(request):
+
+    is_message_all = request.GET.get('message_all') == 'true'
+
+    if is_message_all:
+        return JsonResponse({'is_message_all': True, 'contacts': []})
+
+    selected_year = request.GET.get('year')
+    selected_payment_mode = request.GET.get('payment_mode')
+    paid_filter = request.GET.get('paid')
+
+    year_filter_int = int(dt.now().year)
+    month_filter_int = int(dt.now().month)
+
+    contacts_query = Business.objects.all()
+
+    if paid_filter == 'paid':
+        contacts_query = contacts_query.filter(
+            id__in=Business.objects.filter(
+                id__in=[
+                    contact.id for contact in contacts_query if contact.has_paid(year_filter_int, month_filter_int)
+                ]
+            ).values_list('id', flat=True)
+        )
+    elif paid_filter == 'unpaid':
+
+        contacts_query = contacts_query.filter(
+            id__in=Business.objects.filter(
+                id__in=[
+                    contact.id for contact in contacts_query if not contact.has_paid(year_filter_int, month_filter_int)
+                ]
+            ).values_list('id', flat=True)
+        )
+
+    if selected_year and selected_year.isdigit():
+        contacts_query = contacts_query.filter(
+            id__in=BusinessYear.objects.filter(year=int(selected_year)).values_list('business_id', flat=True)
+        )
+
+    if selected_payment_mode:
+        contacts_query = contacts_query.filter(payment_mode__id=selected_payment_mode)
+
+    contacts = [
+        {
+            'id': contact.id,
+            'paid': contact.has_paid(year_filter_int, month_filter_int),
+            'business_name': contact.business_name,
+            'mobile_no': contact.mobile_no,
+            'payment_mode': contact.payment_mode.name, 
+        }
+        for contact in contacts_query
+    ]
+
+    return JsonResponse({'is_message_all': False, 'contacts': contacts})
+
+
+
+def get_messages(request):
+    contact_id = request.GET.get('contact_id')
+    if not contact_id or not contact_id.isdigit():
+        return JsonResponse({'error': 'Invalid contact ID'}, status=400)
+
+    contact = get_object_or_404(Business, id=int(contact_id))
+    messages = AdminMessage.objects.filter(contact=contact).values('id', 'content', 'sender', 'sent_status')
+
+    return JsonResponse({'messages': list(messages)})
+
+
+@csrf_exempt
+def send_message(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Invalid HTTP method'}, status=405)
+
+    data = json.loads(request.body)
+    message = data.get('message')
+    contact_id = data.get('contact_id')
+    message_id = data.get('message_id')  
+    filters = data.get('filters', {})
+
+    if not message:
+        return JsonResponse({'error': 'Message cannot be empty'}, status=400)
+
+    def send_sms(mobile_no, message):
+        """Function to send SMS using SIM800C."""
+        try:
+            import serial
+            import time
+            
+            #ser = serial.Serial('COM5', 115200, timeout=5) #windows
+            ser = serial.Serial('/dev/ttyUSB0', 115200, timeout=5)  #linux
+            time.sleep(2)
+
+            ser.write('AT+CMGF=1\r\n'.encode())  
+            time.sleep(1)
+            ser.write(b'AT+CSMP=17,167,0,8\r\n') 
+            time.sleep(1)
+
+            ser.write('AT+CMGS="{}"\r\n'.format(mobile_no).encode())  
+            time.sleep(1)
+            ser.write(message.encode())  
+            ser.write(bytes([26])) 
+            time.sleep(3)
+
+            ser.close()
+            return True 
+        except Exception as e:
+            print(f"Error sending SMS: {e}")
+            return False  
+
+    if message_id:
+        admin_message = get_object_or_404(AdminMessage, id=message_id)
+        sent_status = send_sms(admin_message.contact.mobile_no, message)
+
+        admin_message.sent_status = sent_status 
+        admin_message.save(update_fields=['sent_status'])  
+
+        return JsonResponse({
+            'success': sent_status,
+            'message': 'Message resent successfully!' if sent_status else 'Failed to resend message.',
+            'message_id': admin_message.id,
+            'sent_status': sent_status
+        }, status=200 if sent_status else 500)
+
+    if contact_id:
+        contact = get_object_or_404(Business, id=int(contact_id))
+        sent_status = send_sms(contact.mobile_no, message)
+
+        admin_message = AdminMessage.objects.create(
+            contact=contact,
+            sender='admin',
+            content=message,
+            sent_status=sent_status
+        )
+
+        return JsonResponse({
+            'success': sent_status,
+            'message': 'Message sent to contact!' if sent_status else 'Failed to send message.',
+            'message_id': admin_message.id,
+            'sent_status': sent_status
+        }, status=200 if sent_status else 500)
+
+    year = filters.get('year')
+    payment_mode = filters.get('payment_mode')
+    paid = filters.get('paid')
+
+    year_filter_int = int(dt.now().year)
+    month_filter_int = int(dt.now().month)
+
+    contacts_query = Business.objects.all()
+    if paid == 'paid':
+        contacts_query = [c for c in contacts_query if c.has_paid(year_filter_int, month_filter_int)]
+    elif paid == 'unpaid':
+        contacts_query = [c for c in contacts_query if not c.has_paid(year_filter_int, month_filter_int)]
+
+    if year and year.isdigit():
+        contacts_query = contacts_query.filter(
+            id__in=BusinessYear.objects.filter(year=int(year)).values_list('business_id', flat=True)
+        )
+
+    if payment_mode:
+        contacts_query = contacts_query.filter(payment_mode__id=payment_mode)
+
+    failed_numbers = []
+    for contact in contacts_query:
+        sent_status = send_sms(contact.mobile_no, message)
+
+        AdminMessage.objects.create(
+            contact=contact,
+            sender='admin',
+            content=message,
+            sent_status=sent_status
+        )
+
+        if not sent_status:
+            failed_numbers.append(contact.mobile_no)
+
+    if failed_numbers:
+        return JsonResponse({
+            'success': False,
+            'message': f"Failed to send SMS to some numbers: {', '.join(failed_numbers)}",
+            'failed_numbers': failed_numbers 
+        }, status=500)
+
+    return JsonResponse({'success': True, 'message': 'Message sent to all contacts!'})
+
 
 

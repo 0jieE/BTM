@@ -16,3 +16,13 @@ class PictureAdmin(admin.ModelAdmin):
 	image_tag.short_description = 'Image'
 
 admin.site.register(Picture,PictureAdmin)
+
+@admin.register(Business)
+class ContactAdmin(admin.ModelAdmin):
+    list_display = ('business_name','mobile_no')
+
+@admin.register(AdminMessage)
+class BotMessageAdmin(admin.ModelAdmin):
+    list_display = ('contact', 'sender','sent_status', 'content', 'timestamp')
+    list_filter = ('sender', 'timestamp')
+    search_fields = ('contact__name', 'content')
