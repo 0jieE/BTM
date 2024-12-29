@@ -479,7 +479,7 @@
                     <li>Telephone: <a>{{selected_business.telephone_no|default_if_none:"" }}</a></li>
                     <li>Mobile: <a>{{selected_business.mobile_no|default_if_none:"" }}</a></li>
                     <li>Latitude: <a>{{selected_business.latitude|default_if_none:"" }}</a></li>
-                    <li>Longitude: <a href="#" class="js-location" data-url="{% url 'edit-location' selected_business.pk%}">{{selected_business.longitude|default_if_none:"none" }}</a></li>
+                    <li>Longitude: <a href="#" class="js-location" data-url="#">{{selected_business.longitude|default_if_none:"none" }}</a></li>
                 </div>
           </div>
           <!-- Sidebar for Files & Photos -->

@@ -2,7 +2,7 @@ from django import forms
 from crispy_forms.helper import FormHelper
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm, PasswordChangeForm, UsernameField, PasswordResetForm, SetPasswordForm
 from crispy_forms.layout import Submit
-from .models import Business, User, Staff_user, BusinessYear, Admin_user
+from .models import Business, User, Staff_user, Admin_user, BusinessYear
 from django.utils.translation import gettext_lazy as _
 
 class LoginForm(forms.Form):
@@ -159,6 +159,7 @@ class UploadCollectionFileForm(forms.Form):
         self.helper.add_input(Submit('submit', 'Upload'))
 
 class YearSelectionForm(forms.Form):
+    # pass
     year = forms.ChoiceField(
         choices=[(year, year) for year in BusinessYear.objects.values_list('year', flat=True).distinct().order_by('year')],
         label='Select Year',
