@@ -28,7 +28,7 @@ class CollectionSerializer(serializers.ModelSerializer):
 class PictureSerializer(serializers.ModelSerializer):
     class Meta:
         model = Picture
-        fields = ['id','picture', 'business', 'business_name']
+        fields = ['id','picture', 'picture_local', 'business_no', 'business', 'business_name']
         # fields = ['id','picture', 'picture_local', 'description', 'category', 'busineess_no','business','username']
 
 

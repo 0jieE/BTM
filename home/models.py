@@ -121,8 +121,8 @@ class Business(models.Model):
     date_issued = models.DateField(blank=True, null=True)
     telephone_no = models.CharField(max_length=15, blank=True, null=True)
     mobile_no = models.CharField(max_length=15, blank=True, null=True)
-    latitude = models.DecimalField(max_digits=9, decimal_places=6, blank=True, null=True)
-    longitude = models.DecimalField(max_digits=9, decimal_places=6, blank=True, null=True)
+    latitude = models.FloatField(blank=True, null=True)
+    longitude = models.FloatField(blank=True, null=True)
     user = models.ForeignKey(User, related_name='business_user', on_delete=models.CASCADE, null=True, blank=True)
     username = models.CharField(max_length=50, null=True, blank=True)
     updated_on = models.DateTimeField(auto_now_add=False, blank=True, null=True)
@@ -194,9 +194,11 @@ class BusinessYear(models.Model):
 
 class Picture(models.Model):
     business = models.ForeignKey(Business, on_delete=models.CASCADE)
+    business_no = models.CharField(max_length=100)  # Change to CharField
     business_name = models.CharField(max_length=200, unique=False, blank=True, null=True)
     picture_local = models.CharField(max_length=250, null=True, blank=True) # to hold local tablet picture path
     picture = models.ImageField(upload_to=get_upload_to)
+    username = models.CharField(max_length=50, null=True, blank=True)
     updated_on = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

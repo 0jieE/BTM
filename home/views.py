@@ -248,7 +248,7 @@ def process_data_to_calculate(request):
     form = YearSelectionForm(request.POST)
     if form.is_valid():
         year = form.cleaned_data['year']
-
+        print(year)
         # Monthly calculations
         for month in range(1, 13):  # Loop through all 12 months
             monthly_calculation, created = MonthlyCalculation.objects.get_or_create(year=year, month=month)
@@ -274,6 +274,7 @@ def calculate_data(request):
     else:
         form = YearSelectionForm()
         context = {'form': form}
+        print(context)
         return JsonResponse({
             'html_form': render_to_string('maps/calculate_data.html', context, request=request)
         })
